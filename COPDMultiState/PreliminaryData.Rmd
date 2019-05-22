@@ -1,0 +1,398 @@
+---
+title: "PreliminaryData"
+author: "Melissa Lowe"
+date: "1/29/2019"
+output: pdf_document
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.path='prelimfigs/')
+```
+Import Data:
+
+```{r}
+library(haven)
+mort_adjud <- read_dta("~/Desktop/COPDGeneData/Mortality_Jan2019.dta", 
+    NULL)
+```
+```{r}
+#copdgene_p1p2_all <- read_sas("~/Desktop/COPDGeneData/copdgene_p1p2_all_visit_30dec18.sas7bdat",NULL)
+```
+```{r}
+copdgene_p1p2_flat <- read_dta("~/Desktop/COPDGeneData/P1P2_Pheno_Flat_All_sids_Dec18.dta", 
+    NULL)
+```
+
+
+Create my own dataset of variables of interest:
+
+We know we'll need sid, visit num, ccenter, visit date, gender, race, smoking status, age at baseline, visit type, exclude lungtrans, height, wegiht, distwalked, cigperdaysmoknow, all copdexac, lungproc_lungtransplant, copdafe, emphage, smokstartage, ats_packyears, yearssincequit, fev1pp_utah, fev1_fvc_utah, 
+
+```{r}
+
+#need to deal with the atomic labels which are actually storing the subject ids
+library(sjlabelled)
+
+#save the old sid values just in case
+copdgene_p1p2_flat$sid2 <- copdgene_p1p2_flat$sid
+
+#pull the labels as necessary
+copdgene_p1p2_flat$sid <- get_labels(copdgene_p1p2_flat$sid)
+
+#make them both into characters so they are the same. 
+mort_adjud$sid <- as.character(mort_adjud$sid)
+
+
+library(tidyverse)
+
+
+#subset so I don't have an insanely large data set
+
+
+flat_1 <- copdgene_p1p2_flat %>% select(sid, gender,race,Visit_Date_P1,ccenter_P1, EverSmokedCig_P1, smoking_status_P1, Age_P1, Height_CM_P1, Weight_KG_P1, BMI_P1, distwalked_P1, ATS_PackYears_P1,YearsSinceQuit_P1,Duration_Smoking_P1,Severe_Exacerbations_P1, Exacerbation_Frequency_P1, finalGold_P1, FEV1_FVC_utah_P1, FEV1_utah_P1, FVC_utah_P1, pctEmph_Thirona_P1, AWT_seg_Thirona_P1, pctGasTrap_Thirona_P1, Visit_Date_P2, ccenter_P2, years_from_baseline, smoking_status_P2, Age_P2, VisitType_P2, Pi10_Thirona_P1, Height_CM_P2, Weight_KG_P2,                
+BMI_P2,distwalked_P2,SmokStopAge_P2,ATS_PackYears_P2, YearsSinceQuit_P2, Severe_Exacerbations_P2, Exacerbation_Frequency_P2, finalGold_P2, FEV1_FVC_utah_P2, FEV1_utah_P2, FVC_utah_P2, Days_Phase1_Phase2, Change_P1_P2_Smoking_Status, smoking_status_change, pctEmph_Thirona_P2, Pi10_Thirona_P2, pctGasTrap_Thirona_P2, AWT_seg_Thirona_P2)
+
+#possibly useful data set
+mort_1 <- mort_adjud %>% select(sid, vital_status, mortality_survival_vetted, mortality_survival_vital_status, months_followed_net, months_followed_visits, months_followed_LFU, months_followed_SSDI_search, days_followed, mortality_cohort)
+
+#number of days since January 1, 1960 is the date.
+
+flat_1$followdays <- flat_1$Visit_Date_P2 - flat_1$Visit_Date_P1
+
+hist(flat_1$followdays)
+
+mean(na.exclude(flat_1$followdays))
+summary(na.exclude(flat_1$followdays))
+
+flat_1$diff_spiro_ratio <- flat_1$FEV1_FVC_utah_P2 -  flat_1$FEV1_FVC_utah_P1
+
+flat_1$diff_spiro_fev1 <- flat_1$FEV1_utah_P2 - flat_1$FEV1_utah_P1
+
+flat_1$diff_emphys <- flat_1$pctEmph_Thirona_P2 - flat_1$pctEmph_Thirona_P1
+
+flat_1$diff_gas_trap <- flat_1$pctGasTrap_Thirona_P2 - flat_1$pctGasTrap_Thirona_P1
+
+flat_1$diff_Pi10 <-  flat_1$Pi10_Thirona_P1 - flat_1$Pi10_Thirona_P2
+
+flat_1$diff_AWT <- flat_1$AWT_seg_Thirona_P1 - flat_1$AWT_seg_Thirona_P2
+
+
+flag_items <- as.data.frame(cbind(flat_1$diff_spiro_ratio,flat_1$diff_spiro_fev1, flat_1$diff_emphys, flat_1$diff_gas_trap, flat_1$diff_Pi10, flat_1$diff_AWT))
+
+names(flag_items) <- c("diff_ratio","diff_fev1", "diff_emph", "diff_gastrap", "diff_pi10", "diff_awt")
+
+
+```
+
+Summary of Visits:
+
+
+
+
+```{r, include=FALSE}
+summaries <- function(x) {
+  y <- na.exclude(x)
+  minimum = round(min(y), digits =2)
+  #med = median(y)
+  maximum = round(max (y), digits=2)
+  mu = round(mean(y), digits =2 )
+  stdev = round(sd(y), digits=2)
+  quant <- round(quantile(y, c(.05, .5, .95)), digits =3)
+  N =  length(y)
+  allsummary <- c(mu, stdev, N, minimum, maximum, quant)
+  names(allsummary) <- c("Mean", "SD", "N", "Minimum", "Maximum", ".05,.5, .95")
+  return(allsummary)
+}
+```
+
+
+Summary Tables of Outcomes of Interest
+```{r}
+outcome_table <- as.data.frame(t(sapply(flag_items, summaries)))
+outcome_table
+
+```
+
+Currently, they're using the 95 percentile to mark where they think a serious change in disease status would be for these markers. 
+
+This is obviously a fairly artificial marker. 
+```{r}
+
+flat_1$flag_spiro_ratio <- ifelse(flat_1$diff_spiro_ratio >= 0.09, 1, 0) 
+
+sum(na.exclude(flat_1$flag_spiro_ratio))
+
+flat_1$flag_fev1 <-  ifelse(flat_1$diff_spiro_fev1 >= 0.218, 1, 0)
+
+sum(na.exclude(flat_1$flag_fev1))
+
+flat_1$flag_emphys <-  ifelse(flat_1$diff_emphys >= 7.023, 1, 0)
+
+sum(na.exclude(flat_1$flag_emphys))
+
+flat_1$flag_gastrap <-  ifelse(flat_1$diff_gas_trap >= 17.165, 1, 0)
+
+sum(na.exclude(flat_1$flag_gastrap))
+
+flat_1$flag_Pi10 <-  ifelse(flat_1$diff_Pi10 >= 0.600, 1, 0)
+
+sum(na.exclude(flat_1$flag_Pi10))
+
+flat_1$flag_AWT <-  ifelse(flat_1$diff_AWT >= 0.189, 1, 0)
+
+sum(na.exclude(flat_1$flag_AWT))
+
+
+flat_1$flagcount <- flat_1$flag_spiro_ratio + flat_1$flag_fev1 + flat_1$flag_emphys + flat_1$flag_Pi10 + flat_1$flag_gastrap+flat_1$flag_AWT 
+
+table(flat_1$flagcount)
+
+#based on this table, we can see that most people only experience one of these markers if at all but nearly 3-4% of subjects experience two. There are 7 subjects that experience 4/6 markers of increased severity. 
+```
+
+In terms of the mortality dataset:
+
+
+```{r}
+length(mort_adjud$vital_status) #number of subjects in the cohort
+
+sum(na.exclude(mort_adjud$vital_status)) #number of deaths in the cohort
+
+summaries(mort_adjud$months_followed_net) #83 months of average follow up - lower 5% was 13
+
+summaries(mort_adjud$days_followed) # mean days followed was 2491.7 (little weird, 2065 was average days between visits - probably artifact from LFU data)
+
+
+#if we subset to only subjects who died:
+
+mort_dead <- subset(mort_adjud, mort_adjud$vital_status == 1)
+summaries(mort_dead$months_followed_net) #52 months of average follow up time, lower 5% was 7
+
+summaries(mort_dead$days_followed) # mean days followed was 1586.3
+```
+
+
+Merging the datasets:
+
+
+```{r}
+
+fulldata <- merge(flat_1,mort_adjud,by="sid")
+
+fulldata$sid <- as.factor(fulldata$sid)
+
+#subset only to people who had a visit 2 date. 
+
+fulldata$check2 <- ifelse(is.na(fulldata$Visit_Date_P2), 1, 0)
+
+datavisit2 <- subset(fulldata, fulldata$check2 == 0)
+
+#subset only to people who had a marked change in one of the the biomarkers of interest and a visit 2
+
+#datasicker <- subset(fulldata, fulldata$flagcount > 0)
+
+
+#Pull a random sample of subject ids to evaluate the biomarker progression of the subjects
+
+set.seed(245)
+randomsid <- sample(datavisit2$sid, 30, replace=FALSE)
+#$randomsidsick <- sample(datasicker$sid, 30, replace=FALSE)
+
+#create binary variable for where the item is true
+
+datavisit2$check <- ifelse(datavisit2$sid %in% randomsid, 1, 0)
+#datasicker$check <- ifelse(datasicker$sid %in% randomsidsick, 1, 0)
+#subset our dataframe to just have these values:
+randomdat <- subset(datavisit2, datavisit2$check == 1)
+
+#randomsick <- subset(datasicker, datasicker$check == 1)
+```
+
+
+Now make all of the necessary plots that show the progression of the different biomarkers. 
+
+Problem: need to change it to long format instead of wide.
+
+ This is for everyone in the data set, even those that don't hit the extra sick markers.
+```{r}
+widerandom <- randomdat %>% select(sid, Visit_Date_P1, Visit_Date_P2, FEV1_FVC_utah_P1,FEV1_FVC_utah_P2, FEV1_utah_P1,FEV1_utah_P2, FVC_utah_P1,FVC_utah_P2, pctEmph_Thirona_P1, pctEmph_Thirona_P2, AWT_seg_Thirona_P1,  AWT_seg_Thirona_P2,  pctGasTrap_Thirona_P1,pctGasTrap_Thirona_P2, Pi10_Thirona_P1,Pi10_Thirona_P2)
+
+library(reshape)
+library(reshape2)
+library(ggplot2)
+library(magrittr)
+library(dplyr)
+library(gridExtra)
+
+
+#great, now it's in long format and I can start creating the graphs that I need. 
+longrandom <- reshape(widerandom,idvar='sid', direction='long', 
+        varying=list(c(2,3), c(4,5), c(6,7), c(8,9), c(10,11), c(12,13), c(14,15), c(16,17)), #note that these are paired to match eachother
+        timevar='visit',
+        times=c('p1', 'p2'),
+        v.names=c('visitdate','fev1_fvc', 'fev1', 'fvc', 'pct_emph', 'awt', 'pct_gastrap', 'pi10'))
+
+
+#for practice: we'll just do it on one item first
+
+
+
+
+
+plotting <-function(x) {
+a <- ggplot(x, aes(log(visitdate), fev1_fvc)) + 
+  geom_point(color = 'purple') +geom_path(color = 'purple') + scale_x_continuous(breaks=seq(9.75,9.85, 9.96)) + xlab("log(day)") + ylim(0.2,1)
+b <- ggplot(x, aes(log(visitdate), fev1)) + 
+  geom_point(color = 'red') +geom_path(color = 'red') + scale_x_continuous(breaks=seq(9.75,9.85, 9.96)) + xlab("log(day)")+ ylim(0.5,4.25)
+c <- ggplot(x, aes(log(visitdate), fvc)) + 
+  geom_point(color='blue') +geom_path(color='blue') + scale_x_continuous(breaks=seq(9.75,9.85, 9.96)) + xlab("log(day)")+ ylim(1.5,5.3)
+d <- ggplot(x, aes(log(visitdate), pct_emph)) + 
+  geom_point(color='orangered') +geom_path(color='orangered') + scale_x_continuous(breaks=seq(9.75,9.85, 9.96)) + xlab("log(day)") + ylim(0,50)
+e <- ggplot(x, aes(log(visitdate), awt)) + 
+  geom_point(color = 'forestgreen') +geom_path(color = 'forestgreen') + scale_x_continuous(breaks=seq(9.75,9.85, 9.96)) + xlab("log(day)") + ylim(0.5,1.5)
+f <- ggplot(x, aes(log(visitdate), pct_gastrap)) + 
+  geom_point(color='magenta') +geom_path(color='magenta') + scale_x_continuous(breaks=seq(9.75,9.85, 9.96)) + xlab("log(day)") + ylim(0,76) 
+g <- ggplot(x, aes(log(visitdate), pi10)) + 
+  geom_point(color = 'darkblue') +geom_path(color = 'darkblue')  + scale_x_continuous(breaks=seq(9.75,9.85, 9.96)) + xlab("log(day)")+ ylim(1.3,4) 
+
+
+return(grid.arrange(a,b,c,d,e,f,g, ncol=7))
+
+}
+
+
+
+
+
+subjects <- unique(longrandom$sid)
+for (i in 1:30) {
+  x <- as.data.frame(subset(longrandom, longrandom$sid == subjects[i]))
+  a <- plotting(x)
+  a
+}
+
+
+
+
+```
+
+
+
+Change variables to fit data structures:
+
+```{r} 
+fulldata$gender <- as.factor(fulldata$gender)
+fulldata$race <- as.factor(fulldata$race)
+fulldata$ccenter_P1 <- as.factor(fulldata$ccenter_P1)
+fulldata$ccenter_P2 <- as.factor(fulldata$ccenter_P2)
+fulldata$finalGold_P1 <- as.factor(fulldata$finalGold_P1)
+fulldata$finalGold_P2 <- as.factor(fulldata$finalGold_P2)
+fulldata$EverSmokedCig_P1<- as.factor(fulldata$EverSmokedCig_P1)
+fulldata$smoking_status_P1<- as.factor(fulldata$smoking_status_P1)
+```
+
+Now for summary tables.
+
+We need to define the population of interest, that is; we want all subjects that either complete both visits or failed to complete both visits because they died before visit 1. 
+
+```{r}
+#subjects that died before visit 2:
+
+fulldata$deadearly <- ifelse(is.na(fulldata$Visit_Date_P2)& fulldata$vital_status==1, 1, 0)
+
+#subjects that made it to visit 2:
+fulldata$v2attend<- ifelse(!is.na(fulldata$Visit_Date_P2), 1, 0)
+
+#subjects that made it to visit 2 and are known to be dead
+
+fulldata$deadlater <- ifelse(fulldata$v2attend == 1 & fulldata$vital_status ==1, 1, 0)
+
+subjectdata <- subset(fulldata, fulldata$deadearly ==1 | fulldata$v2attend == 1 | fulldata$deadlater == 1)
+subjectdata$group1 <- rep(0, 8158)
+
+subjectdata$groupa <- ifelse(subjectdata$deadearly == 1, 1, subjectdata$group1)
+subjectdata$groupb <- ifelse(subjectdata$v2attend == 1, 2, subjectdata$groupa)
+subjectdata$group <- ifelse(subjectdata$deadlater == 1, 3, subjectdata$groupb)
+
+
+```
+
+
+
+
+Now, create a general table 1, then a table 1 for each of the other groups.
+
+```{r}
+library(tableone)
+## Vector of variables to summarize
+myVars <- c("Age_P1", "BMI_P1", "ATS_PackYears_P1", "FEV1_FVC_utah_P1", "FEV1_utah_P1", "FVC_utah_P1",
+            "pctEmph_Thirona_P1", "AWT_seg_Thirona_P1", "pctGasTrap_Thirona_P1","gender", "race", "EverSmokedCig_P1", "smoking_status_P1",
+             "finalGold_P1", "finalGold_P2")
+## Vector of categorical variables that need transformation
+catVars <- c("gender", "race", "EverSmokedCig_P1", "smoking_status_P1",
+             "finalGold_P1", "finalGold_P2")
+## Create  TableOne objects
+tab2 <- CreateTableOne(vars = myVars, data = subjectdata, factorVars = catVars)
+tab2 #values for all patients
+summary(tab2)
+
+
+```
+
+```{r}
+
+subjectdata$group <- as.factor(subjectdata$group)
+## Vector of variables to summarize
+myVars <- c("Age_P1", "BMI_P1", "ATS_PackYears_P1", "FEV1_FVC_utah_P1", "FEV1_utah_P1", "FVC_utah_P1",
+            "pctEmph_Thirona_P1", "AWT_seg_Thirona_P1", "pctGasTrap_Thirona_P1","gender", "race", "EverSmokedCig_P1", "smoking_status_P1",
+             "finalGold_P1", "finalGold_P2", "group")
+## Vector of categorical variables that need transformation
+catVars <- c("gender", "race", "EverSmokedCig_P1", "smoking_status_P1",
+             "finalGold_P1", "finalGold_P2", "group")
+## Create  TableOne objects
+tab3 <- CreateTableOne(vars = myVars, strata = c("group"), data = subjectdata, factorVars = catVars)
+tab3 #values for all patients
+summary(tab3)
+
+
+```
+
+```{r}
+sum(is.na(flat_1$Visit_Date_P2)) #3962 subjects did not have a visit 2 date
+sum(is.na(flat_1$Visit_Date_P1)) #349 subjects do not have a visit 1 date
+
+sum(is.na(flat_1$FEV1_utah_P2)) #4624 patients don't have fev1 for visit 2
+sum(is.na(flat_1$FEV1_utah_P1)) #416 patients don't have fev1 for visit 1
+
+sum(is.na(flat_1$FEV1_FVC_utah_P2)) #4625 patients don't have fev1/fvc for visit 2
+sum(is.na(flat_1$FEV1_FVC_utah_P1)) #416 patients don't have fev1/fvc for visit 1
+
+
+sum(is.na(flat_1$pctEmph_Thirona_P2)) #4995 patients don't have emphysema percentage for visit 2
+sum(is.na(flat_1$pctEmph_Thirona_P1)) #1072 patients didn't have visit 1 emphysema
+
+sum(is.na(flat_1$AWT_seg_Thirona_P2)) #5000 patients don't have AWT measures for visit 2
+sum(is.na(flat_1$AWT_seg_Thirona_P1)) #1073 patients dont' have AWT measures for visit 1
+
+sum(is.na(flat_1$Pi10_Thirona_P2)) #4995 patients don't have Pi10 for visit 2
+sum(is.na(flat_1$Pi10_Thirona_P1)) #1072 patients don't have Pi10 values for visit 1
+
+
+sum(is.na(flat_1$pctGasTrap_Thirona_P2)) #5505 patients don't have gas trapping for visit 2
+sum(is.na(flat_1$pctGasTrap_Thirona_P1)) #2435 patients don't have gas trapping for visit 1
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+

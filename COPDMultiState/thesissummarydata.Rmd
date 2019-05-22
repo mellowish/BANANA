@@ -1,0 +1,994 @@
+---
+title: "PreliminaryData"
+author: "Melissa Lowe"
+date: "1/29/2019"
+output: pdf_document
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.path='prelimfigs/')
+```
+Import Data:
+
+```{r}
+setwd("~/Desktop/COPDGeneData")
+
+```
+
+```{r}
+library(haven)
+mort_adjud <- read_dta("~/Desktop/COPDGeneData/Mortality_Jan2019.dta", 
+    NULL)
+```
+```{r}
+LFUsurv<- read_sas("~/Desktop/COPDGeneData/anc348_lfu_rev.sas7bdat",NULL)
+```
+long data for all
+```{r}
+copd_p1p2 <- read_sas("~/Desktop/COPDGeneData/copdgene_p1p2_all_visit_30dec18.sas7bdat",NULL)
+
+```
+```{r}
+#copdgene_p1p2_flat <- read_dta("~/Desktop/COPDGeneData/P1P2_Pheno_Flat_All_sids_Dec18.dta",     NULL)
+```
+
+LFU DATA EVALUATION:
+
+```{r}
+hist(LFUsurv$surveyNum)
+
+library(ggplot2)
+
+ggplot(LFUsurv, aes(surveyNum)) +
+  geom_histogram(bins = 50, fill="blue")+
+  scale_x_continuous("Number of Surveys", breaks=c(0:20)) +ylab("Count") + ggtitle("# of surveys completed per patient \n during study") + theme(
+plot.title = element_text(color="black", size=14, face="bold")
+)
+
+
+ggplot(LFUsurv, aes(MonthsSinceInitialVisit)) +
+  geom_histogram(bins = 131, fill="gray20", color="black")+
+  scale_x_continuous("Months of Follow-Up Since First Visit", breaks=c(1, 50, 100, 130)) +ylab("Count") + ggtitle("# of months since initial visit") + theme(
+plot.title = element_text(color="black", size=14, face="bold")
+)
+
+ggplot(LFUsurv, aes(ER_times)) +  geom_histogram(bins = 131, fill="gray20", color="black")+
+  scale_x_continuous("#ER", breaks=c(1, 50, 100, 130)) +ylab("Count") + ggtitle("# of ER Since Last Visit") + theme(
+plot.title = element_text(color="black", size=14, face="bold")
+)
+
+ggplot(LFUsurv, aes(Antib_steroid_times)) +  geom_histogram(bins = 131, fill="gray20", color="black")+
+  scale_x_continuous("#Episodes", breaks=c(1, 50, 100, 130)) +ylab("Count") + ggtitle("# of Episodes Since Last Visit") + theme(
+plot.title = element_text(color="black", size=14, face="bold")
+)
+ggplot(LFUsurv, aes(Hosp_times)) +  geom_histogram(bins = 131, fill="gray20", color="black")+
+  scale_x_continuous("#Hospitalizations", breaks=c(1, 50, 100, 130)) +ylab("Count") + ggtitle("# of Hospitalizations Since Last Visit") + theme(
+plot.title = element_text(color="black", size=14, face="bold")
+)
+
+ggplot(LFUsurv, aes(Net_Exacerbations)) +  geom_histogram(bins = 131, fill="gray20", color="black")+
+  scale_x_continuous("# Total Exacerbations", breaks=c(1, 50, 100, 130)) +ylab("Count") + ggtitle("# Exacerbations") + theme(
+plot.title = element_text(color="black", size=14, face="bold")
+)
+
+ggplot(LFUsurv, aes(Net_Severe_Exac)) +  geom_histogram(bins = 131, fill="gray20", color="black")+
+  scale_x_continuous("# Severe Exacerbations", breaks=c(1, 50, 100, 130)) +ylab("Count") + ggtitle("# Severe Exacerbations") + theme(
+plot.title = element_text(color="black", size=14, face="bold")
+)
+
+
+```
+
+Data Cleaning for LFU Dataset:
+```{r}
+
+library(sjlabelled)
+
+#change things from atomic to more appropriate data types
+LFUsurv$sid <- as.character(LFUsurv$sid)
+
+LFUsurv$MonthsSinceInitialVisit <- as.numeric(LFUsurv$MonthsSinceInitialVisit)
+ 
+LFUsurv$surveyNum <- as.numeric(LFUsurv$surveyNum)
+
+LFUsurv$ccenter <- as.factor(as.character(LFUsurv$ccenter))
+
+LFUsurv$MethodTaken <- as.factor(as.character(LFUsurv$MethodTaken))
+
+LFUsurv$SurveyVersion <- as.factor(as.character(LFUsurv$SurveyVersion))
+
+LFUsurv$ER_times <- as.numeric(LFUsurv$ER_times) #how many times they visited the ER - not everyone asked
+
+LFUsurv$Antibiotic_times <- as.numeric(LFUsurv$Antibiotic_times) #how many times they took antibiotics, no longer asked
+
+LFUsurv$Antib_steroid_times <- as.numeric(LFUsurv$Antib_steroid_times) 
+
+LFUsurv$Steroid_times <- as.numeric(LFUsurv$Steroid_times) #how many times they took steroids, no longer asked
+
+LFUsurv$UrgentDr_times <- as.numeric(LFUsurv$UrgentDr_times) #stopped asking this question
+
+LFUsurv$Hosp_times<- as.numeric(LFUsurv$Hosp_times)
+
+LFUsurv$Net_Exacerbations<- as.numeric(LFUsurv$Net_Exacerbations)
+
+LFUsurv$Net_Severe_Exac <- as.numeric(LFUsurv$Net_Severe_Exac)
+
+# icu values, breathing tube were added later
+#new meds and oxygen was dropped
+
+#so I need to go through each of these and see what the incidence is on each survey and decide how to combine them.
+
+```
+
+```{r}
+
+
+ggplot(LFUsurv,aes(x=ER_times,group=SurveyYear,fill=SurveyYear))+
+  geom_histogram(position="dodge",alpha=0.8,binwidth=1) +
+  xlab("ER_Times")+
+  ylab("Count")+
+  scale_y_log10()+
+  labs(title = "ER Visits by Survey Type Administered")+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  theme(plot.title=element_text(family="Times", face="bold", size=10)) 
+
+
+ggplot(LFUsurv,aes(x=Antibiotic_times,group=SurveyYear,fill=SurveyYear))+
+  geom_histogram(position="dodge",alpha=0.8,binwidth=1) +
+  xlab("Antibiotic Presc. Count")+
+  ylab("Count")+
+  scale_y_log10()+
+  labs(title = "Antibiotic Prescr. by Survey Type Administered")+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  theme(plot.title=element_text(family="Times", face="bold", size=10)) 
+
+
+ggplot(LFUsurv,aes(x=Steroid_times,group=SurveyYear,fill=SurveyYear))+
+  geom_histogram(position="dodge",alpha=0.8,binwidth=1) +
+  xlab("Steroid Presc. Count")+
+  ylab("Count")+
+  scale_y_log10()+
+  labs(title = "Steroid Prescr. by Survey Type Administered")+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  theme(plot.title=element_text(family="Times", face="bold", size=10)) 
+
+ggplot(LFUsurv,aes(x=UrgentDr_times,group=SurveyYear,fill=SurveyYear))+
+  geom_histogram(position="dodge",alpha=0.8,binwidth=1) +
+  xlab("Urgent Dr. Visit Count")+
+  ylab("Count")+
+  scale_y_log10()+
+  labs(title = "Urgent Dr. Visit by Survey Type Administered")+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  theme(plot.title=element_text(family="Times", face="bold", size=10)) 
+
+
+ggplot(LFUsurv,aes(x=Antib_steroid_times,group=SurveyYear,fill=SurveyYear))+
+  geom_histogram(position="dodge",alpha=0.8,binwidth=1) +
+  xlab("Antibiotic or Steroid Presc. Count")+
+  ylab("Count")+
+  scale_y_log10()+
+  labs(title = "Antibiotic or Steroid Presc. by Survey Type Administered")+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  theme(plot.title=element_text(family="Times", face="bold", size=10)) 
+
+```
+
+
+```{r}
+
+
+
+#pull the labels as necessary
+copd_p1p2$sid <- as.character(copd_p1p2$sid)
+copd_p1p2$ccenter <- as.character(copd_p1p2$ccenter)
+copd_p1p2$Phase_study <- as.numeric(copd_p1p2$Phase_study)
+copd_p1p2$gender <- as.factor(copd_p1p2$gender)
+copd_p1p2$race <- as.factor(copd_p1p2$race)
+copd_p1p2$ethnic <- as.factor(copd_p1p2$ethnic)
+copd_p1p2$ExclusionaryDisease <- as.factor(copd_p1p2$ExclusionaryDisease)
+copd_p1p2$finalgold_baseline <- as.factor(copd_p1p2$finalgold_baseline)
+copd_p1p2$Height_CM <- as.numeric(copd_p1p2$Height_CM)
+copd_p1p2$Weight_KG <- as.numeric(copd_p1p2$Weight_KG)
+copd_p1p2$O2_Therapy <- as.factor(ifelse(copd_p1p2$O2_Therapy >= 0, copd_p1p2$O2_Therapy, NA))
+copd_p1p2$BMI <- as.numeric(copd_p1p2$BMI)
+copd_p1p2$Walk_Course  <- as.factor(ifelse(copd_p1p2$Walk_Course  >= 1, copd_p1p2$Walk_Course , NA))
+copd_p1p2$Walk_Limit  <- as.factor(ifelse(copd_p1p2$Walk_Limit  >= 0, copd_p1p2$Walk_Limit , NA)) 
+copd_p1p2$otherca_specify <- as.factor(as.character(copd_p1p2$otherca_specify))
+
+#summary(as.factor(copd_p1p2$otherca_specify ))
+#make them both into characters so they are the same. 
+mort_adjud$sid <- as.character(mort_adjud$sid)
+
+#sapply(copd_p1p2, class)  #used to check for any remaining problematic spots for merging
+
+
+```
+
+Let's try to merge the LFU dataset with the copd_p1p2 dataset
+```{r}
+
+#I didn't have a great idea of what was in the data set so I've broken it up here into more specific groups. 
+
+
+table(copd_p1p2$visitnum)
+nombres_all <- noquote(names(copd_p1p2))
+
+nombres_nochg <- nombres_all[c(1:4, 8:11, 13, 14, 16, 17, 19:23, 30, 31, 33,34,37,53:158, 186:213,216:226,227:262,271:277,298:303,318:411,445:494, 557)]
+
+nombres_nochg2 <- nombres_all[c(1, 2, 8:11, 13,14,16,19, 445:479, 480:491)]
+
+cancers <- nombres_all[c(54:84)]
+otherdiseases <- nombres_all[c( 85:138, 213, 318:373)]
+pain <- nombres_all[c( 144:146, 149:158)]
+procedures <- nombres_all[c( 47, 148, 271:277, 298:303, 374:375)]
+dxslv <- nombres_all[c(159:185)]
+phenotest <- nombres_all[c(186:190)]
+medx <- nombres_all[c(197:212, 216:226)] 
+smokhist <- nombres_all[c(278:288, 376:392, 492:533)]
+expose <- nombres_all[c(376:411)]
+scores <- nombres_all[c(412:444)]
+socioecon <- nombres_all[c(445:479)]
+female <- nombres_all[c(480:491)]
+bloodtest <- nombres_all[c(534:551)]
+dlcostuff<- nombres_all[c(552:556, 558:569, 574:578)]
+spiro <- nombres_all[c(570:574, 631:650)]
+
+itemsofinterest <- nombres_all[c( 15, 22,23,30, 31, 37, 579:585, 587,588, 628, 629,631:644, 652:668, 678,682, 757, 758)]
+
+visitinfo <- nombres_all[c(2,3,4,5,6,7,8,9,10,11,13,15)]
+
+genptinfo <- nombres_all[c(1:6,8:13,15, 22,23,30, 31, 37)]
+#bode is risk of mortality: bmi, 6min, fev1, dyspnea in a formula - 579
+#use thirona data for imaging. vida is ok for emphysema, slicer is similar to vida, only used in phase 1. 
+#final gold phase 1: 651, final gold phase 2: 652
+
+
+
+```
+Merge the datasets:
+
+```{r}
+
+library(dplyr)
+library(tidyr)
+#ptinfo <- copd_p1p2[c(1,2,8:11,13,14,445,446)] 
+
+copd2 <- copd_p1p2[c( 1,2,3,5,6,8:11,13,14,445,446,15, 22,23,30, 31, 37, 579:585, 587,588, 628, 629,631:644, 652:668, 678,682, 757, 758)] #dataset of repeated variables of interest
+names(copd2)
+#there are `17129 observations in this dataset
+
+#29 is the gold stage values which we care about for summary statistics. 
+copd3 <- subset(copd2, visitnum==1)[,c(1,3,29)] #10371 are visit 1
+copd4 <- subset(copd2, visitnum == 2)[,c(1,3,29)]#6758 are visit 2 (5717 completed p1p2 and spirometry)
+
+
+names(copd3) <- c("sid", "visitnum", "finalgold1")
+names(copd4) <- c("sid", "visitnum", "finalgold2")
+#every subject id and every row needs to have finalgold1 and finalgold2 even if they are empty. 
+copd3 <- copd3[,c(1,3)]
+copd4 <- copd4[,c(1,3)] #drop the visit value
+
+
+copd5 <- merge(copd2,copd3,by=c("sid"), all.x=TRUE)
+copd6 <- merge(copd5,copd4, by=c("sid"), all.x=TRUE)
+
+
+#I think i need to merge copd4 and copd3 in with the main copd2 dataset. This will require a merge, not a column bind because there are differing numbers of rows - we'll match based on subject id. 
+
+#I want every row to have finalgold1 and finalgold2 so that I can use these for summary statistics. Conveniently, we'll also keep finalgold as a general variable that we can use for time-varying covariates if we want to.
+
+library(dplyr)
+
+#pull a group of items from each subject that don't change to be added to the LFU dataset
+
+unchanging <- select(copd6,c("sid", "ccenter", "gender", "race", "ethnic", "EverSmokedCig", "ExclusionaryDisease", "age_baseline", "Income", "Insurance", "finalgold1", "finalgold2", "visitnum")) 
+
+#we have a fill-in problem with Income and Insurance 
+
+#we want to selectively keep rows that have income and insurance and drop those that don't without dropping subjects with only one visit
+
+items <- unchanging %>% group_by(sid) %>% summarize(visitcount = max(visitnum)) 
+
+check <- select(unchanging, c("sid", "visitnum"))
+check2 <- merge(unchanging, items, by = "sid")  
+#flags the rows we want to drop
+check2$drop <- ifelse(check2$visitnum == check2$visitcount, 1, 0)
+
+check3 <- subset(check2, check2$drop == 1)               
+#make sure we have the right number of subjects: 
+#length(unique(check3$sid)) #10720
+#length(unique(copd_p1p2$sid)) #10720
+
+# make a count of how many surveys were completed by each subject
+surveyrep <- LFUsurv %>%
+  group_by(sid) %>% 
+     summarize(counting = max(surveyNum)) 
+#merge that with check3
+total <- merge(check3,surveyrep,by=c("sid"))
+
+#now i need to repeat each row dependent on the number of times the surveys were repeated.
+
+newDat <- total[rep(rownames(total), total$counting), ] # OH MY FREAKING GOD IT WORKED
+
+#Combine LFU dataset with this one filled with characteristics and then pause there so that we can work on the mortality dataset.
+LFUsurv <- LFUsurv[,-8] #drop ccenter because I think that complicates things.
+
+rename(newDat, sid2 = sid)
+names(newDat) #there are 14 columns here
+
+
+
+LFUdescript <- cbind(LFUsurv, newDat)  ####        THIS IS THE SEMI-FINAL DATASET         ####
+
+#check column heads on LFUdescript
+intersect(names(LFUdescript), names(LFUsurv))
+unique(names(LFUdescript), names(LFUsurv))
+
+#sid is repeated on LFUdescript, also have visitnum, visitcount, drop, and counting . We can drop these before proceeding.
+names(LFUdescript) 
+#drop 32, 42, 42, 44, 45
+
+LFUdescript <- LFUdescript[-c(32,44:47)]
+names(LFUdescript) #now we're back down to 42 variables which is good
+
+
+
+
+#Mortality dataset
+names(mort_adjud) #57 variables
+names(LFUdescript) #42 variables
+names(copd6) #67 variables
+
+fulldata2 <- merge(copd6,mort_adjud, by="sid")
+
+
+ #fulldata has 123 variables, LFUdescript has 42 variables
+
+#what's the number of shared variables between them?
+
+intersect(names(LFUdescript), names(fulldata2)) #12 shared variables between fulldata and LFU description
+setdiff(names(LFUdescript),names(fulldata2))
+setdiff(names(fulldata2),names(LFUdescript))
+
+empty <- data.frame(matrix(NA, nrow=17129, ncol=30)) #add to copd/mort
+empty2 <- data.frame(matrix(NA, nrow=81912, ncol=111)) #add to LFUsurv
+
+fulldata3 <- cbind(fulldata2, empty)
+
+LFUdescript2 <- cbind(LFUdescript, empty2)
+
+name1 <- names(LFUdescript2)#153
+
+
+name2 <-names(fulldata3) #153
+
+
+
+a <-c("sid", "surveyNum","SurveyYear","MonthsSinceInitialVisit","monthsSincePrevSurvey","Exclude_ILD_Bronchiectasis", "Exclude_LungTrans_LVRS" ,"SurveyVersion" ,"MethodTaken","Episode_sinceLast", "Antibiotics_SinceLast","Antibiotic_times","Steroids_sinceLast","Steroid_times" ,"Antib_steroid_sinceLast", "Antib_steroid_times","UrgentDr_SinceLast" ,"UrgentDr_times","ER_sinceLast", "ER_times"  , "Hosp_sinceLast",  "Hosp_times" ,"ICU_sinceLast","BreathingTube_sinceLast" , "NewMeds_sinceLast","O2_sinceLast" ,    "CurrentlySmoking_LFU" , "exacerb_Ster_Antib" , "episode_untreated"  ,"Net_Exacerbations",  "Net_Severe_Exac", "ccenter", "gender", "race", "ethnic","EverSmokedCig",       "ExclusionaryDisease", "age_baseline", "Income", "Insurance" , "finalgold1", "finalgold2", "visitnum", "age_visit","Height_CM" ,"Weight_KG","Waist_CM","Arm_Span_CM" ,"BMI" ,"BODE",  "ATS_PackYears","YearsSinceQuit", "Duration_Smoking","Severe_Exacerbations" ,"Exacerbation_Frequency" ,"Chronic_Bronchitis", "SafetyIssues_P2" ,  "ConfirmedNoCT","finalGold"  ,"finalgold_visit", "FEV1pp_utah","FVCpp_utah","FEV1_FVC_utah"  ,"FEV1_utah" ,"FEV6_utah", "FVC_utah", "PEF_utah","FEF2575_utah","pre_FEV1" ,"pre_FEV6","pre_FVC","pre_FEV1_FVC","pre_PEF" , "pre_FEF2575" , "finalgold_Phase2","NewGOLD_SGRQ","Chronic_Bronchitis_P1", "Days_Phase1_Phase2", "Years_Phase1_Phase2" , "Change_P1_P2_Smoking_Status", "Change_P1_P2_Gold_class", "Change_P1_P2_FEV1_ml","Change_P1_P2_FEV1pp" ,"Change_P1_P2_FEV1_ml_yr" , "Change_P1_P2_MMRC","Change_P1_P2_SGRQ_total", "Change_P1_P2_distwalked", "Change_P1_P2_O2","New_Chronic_Bronchitis","signif_lungchange_suppress", "smoking_status_change", "pctEmph_Thirona", "pctGasTrap_Thirona" ,"Pi10_Thirona" ,"AWT_seg_Thirona","vital_status","mortality_survival_vetted","mortality_survival_vital_status" , "months_followed_net" , "months_followed_visits", "months_followed_LFU", "months_followed_SSDI_search" ,"days_followed", "mortality_cohort" ,"SSDI_searched" ,   "death_cause_adjud","Torch_UCD" , "Torch_UCD_description" ,"Torch_UCD_Other_specify",  "Torch_Group_Basic", "Torch_Group_Basic_descrip", "Torch_UCD_COPD_related" ,"CCOD_COPD_Exac_w_Pneu", "CCOD_COPD_Exac_wo_Pneu",  "CCOD_COPD_no_exac", "CCOD_OthResp","CCOD_MI" , "CCOD_Stroke"  , "CCOD_DVT"  ,  "CCOD_OthCardiac", "CCOD_SuddenDeath",  "CCOD_SuddenCardiac", "CCOD_LungCancer" ,"CCOD_OthCancer","CCOD_Renal", "CCOD_Diabetes","CCOD_Sepsis",  "CCOD_Accdnt_suicd" ,"CCOD_OthDis" ,"CCOD_UnknownFactor","CCOD_Accdnt_Details",  "CCOD_COPD_resp",   "CCOD_CVD" ,"CCOD_Cancer","CCOD_Other" , "AnyCancerDx"   ,"CancerImpact","source_DeathCert" ,"source_InformInterview", "source_MedicalRec" , "source_Other", "source_None", "InfoAssessment","Comorbidity_CoronaryArtery",  "Comorbidity_LungCancer" , "Comorbidity_Osteopors",  "Comorbidity_AnxDepr","Comorbidity_Diabetes","AdjudUCD_MatchDeathCert_12" , "AdjudUCD_MatchDeathCert_any"  ,  "COPD_on_DeathCert" , "Visit_Year", "Visit_Date") #153, these are the names for LFUdescript2
+
+setdiff(a, name1)
+
+b <- c("sid","ccenter", "visitnum","Visit_Year", "Visit_Date", "gender" , "race","ethnic", "EverSmokedCig" ,"ExclusionaryDisease", "age_baseline","Income" ,"Insurance" , "age_visit",
+"Height_CM" , "Weight_KG", "Waist_CM","Arm_Span_CM" , "BMI" , "BODE" , "ATS_PackYears", "YearsSinceQuit","Duration_Smoking","Severe_Exacerbations" ,"Exacerbation_Frequency"  ,"Chronic_Bronchitis" , "SafetyIssues_P2" ,"ConfirmedNoCT"  , "finalGold","finalgold_visit" , "FEV1pp_utah","FVCpp_utah" ,"FEV1_FVC_utah", "FEV1_utah" ,"FEV6_utah"  ,"FVC_utah" ,   "PEF_utah" ,"FEF2575_utah", "pre_FEV1" ,"pre_FEV6" ,"pre_FVC"  ,"pre_FEV1_FVC", "pre_PEF" ,"pre_FEF2575","finalgold_Phase2" ,"NewGOLD_SGRQ", "Chronic_Bronchitis_P1" , "Days_Phase1_Phase2","Years_Phase1_Phase2" ,"Change_P1_P2_Smoking_Status", "Change_P1_P2_Gold_class", "Change_P1_P2_FEV1_ml","Change_P1_P2_FEV1pp" ,"Change_P1_P2_FEV1_ml_yr" ,"Change_P1_P2_MMRC", "Change_P1_P2_SGRQ_total"  ,"Change_P1_P2_distwalked" ,"Change_P1_P2_O2", "New_Chronic_Bronchitis",  "signif_lungchange_suppress" ,"smoking_status_change" ,"pctEmph_Thirona", "pctGasTrap_Thirona", "Pi10_Thirona","AWT_seg_Thirona", "finalgold1", "finalgold2","vital_status"  ,"mortality_survival_vetted","mortality_survival_vital_status" ,"months_followed_net" , "months_followed_visits","months_followed_LFU", "months_followed_SSDI_search" ,"days_followed", "mortality_cohort" , "SSDI_searched",  "death_cause_adjud" ,  "Torch_UCD",    "Torch_UCD_description"  ,"Torch_UCD_Other_specify", "Torch_Group_Basic", "Torch_Group_Basic_descrip","Torch_UCD_COPD_related" , "CCOD_COPD_Exac_w_Pneu","CCOD_COPD_Exac_wo_Pneu", "CCOD_COPD_no_exac" , "CCOD_OthResp","CCOD_MI", "CCOD_Stroke","CCOD_DVT","CCOD_OthCardiac","CCOD_SuddenDeath", "CCOD_SuddenCardiac","CCOD_LungCancer","CCOD_OthCancer","CCOD_Renal" ,                     "CCOD_Diabetes","CCOD_Sepsis" , "CCOD_Accdnt_suicd","CCOD_OthDis" ,"CCOD_UnknownFactor" ,"CCOD_Accdnt_Details" ,"CCOD_COPD_resp" ,"CCOD_CVD",  "CCOD_Cancer" , "CCOD_Other","AnyCancerDx","CancerImpact" ,  "source_DeathCert"  ,"source_InformInterview"  ,"source_MedicalRec" , "source_Other", "source_None" , "InfoAssessment","Comorbidity_CoronaryArtery", "Comorbidity_LungCancer"  ,"Comorbidity_Osteopors",  "Comorbidity_AnxDepr",  "Comorbidity_Diabetes", "AdjudUCD_MatchDeathCert_12" ,"AdjudUCD_MatchDeathCert_any","COPD_on_DeathCert" , "surveyNum","SurveyYear","MonthsSinceInitialVisit" ,"monthsSincePrevSurvey","Exclude_ILD_Bronchiectasis","Exclude_LungTrans_LVRS" , "SurveyVersion","MethodTaken" ,"Episode_sinceLast","Antibiotics_SinceLast" ,"Antibiotic_times", "Steroids_sinceLast","Steroid_times", "Antib_steroid_sinceLast","Antib_steroid_times" , "UrgentDr_SinceLast", "UrgentDr_times", "ER_sinceLast","ER_times","Hosp_sinceLast" ,"Hosp_times" ,"ICU_sinceLast", "BreathingTube_sinceLast" ,"NewMeds_sinceLast" ,"O2_sinceLast","CurrentlySmoking_LFU" ,"exacerb_Ster_Antib" ,"episode_untreated","Net_Exacerbations","Net_Severe_Exac") #149
+
+setdiff(b, name2)
+#setdiff(b,a) #check that they have the same column names
+
+names(LFUdescript2) <- a
+
+names(fulldata3) <- b
+
+#merge attempt 1
+
+
+testing <- rbind(LFUdescript2, fulldata3)
+#Fill in the dataset further
+
+names(testing)
+
+```
+Let's talk dead people - they'll need another row too.
+
+```{r}
+
+
+ 
+
+#also have an issue with vital status. need to create another row for each subject who died
+
+
+deadpool <- subset(testing, vital_status ==1) #SELECT ALL THOSE WHO HAVE DIED
+
+deadpool2 <- deadpool[c(1, 32:42,57,73, 94:149)] #of the dead people, pull their mortality information and some of their general information. This is 70 columns
+
+empty3 <- data.frame(matrix(NA, nrow=2188, ncol=83)) #add to deadpool2, 85 empty columns
+
+deadpool3 <- cbind(deadpool2, empty3) #combine the empty dataset with the mortality of dead people
+
+ba <- names(deadpool2) #pull names of deadpool2
+
+ab <- setdiff(names(deadpool),names(deadpool2)) #figure out what's missing and which columns we need to add, 83 missing
+
+bab <- c(ba, ab) #combine them so we have all of the names we need
+
+names(deadpool3) <- bab #make those into the names for deadpool 3. First the deadpool2 then the empty one gets filled in
+
+testing2 <- rbind(testing, deadpool3) #ok, now every dead person has an additional row.
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Create my own dataset of variables of interest:
+
+We know we'll need sid, visit num, ccenter, visit date, gender, race, smoking status, age at baseline, visit type, exclude lungtrans, height, wegiht, distwalked, cigperdaysmoknow, all copdexac, lungproc_lungtransplant, copdafe, emphage, smokstartage, ats_packyears, yearssincequit, fev1pp_utah, fev1_fvc_utah, 
+
+```{r}
+
+
+#need to deal with the atomic labels which are actually storing the subject ids
+library(sjlabelled)
+
+#save the old sid values just in case
+copdgene_p1p2_flat$sid2 <- copdgene_p1p2_flat$sid
+
+#pull the labels as necessary
+copdgene_p1p2_flat$sid <- get_labels(copdgene_p1p2_flat$sid)
+ get_labels(copdgene_p1p2_flat$ccenter_P1)
+
+#make them both into characters so they are the same. 
+mort_adjud$sid <- as.character(mort_adjud$sid)
+
+
+library(tidyverse)
+library(dplyr)
+
+#There are some people that definitely need to be removed from the cohort so we'll do that cleaning here. 
+
+
+#get rid of subjects with lung transplants
+copdgene_p1p2_flat <- subset(copdgene_p1p2_flat, is.na(copdgene_p1p2_flat$LungProc_LungTransplant_P2) | copdgene_p1p2_flat$LungProc_LungTransplant_P2 !=1)
+
+#get rid of subjects with exclusionary disease
+
+
+copdgene_p1p2_flat <- subset(copdgene_p1p2_flat,  copdgene_p1p2_flat$ExclusionaryDisease !=3)
+
+
+#subset so I don't have an insanely large data set
+
+
+flat_1 <- copdgene_p1p2_flat %>% select(sid, gender,race,Visit_Date_P1,ccenter_P1, EverSmokedCig_P1, smoking_status_P1, Age_P1, Height_CM_P1, Weight_KG_P1, BMI_P1, distwalked_P1, ATS_PackYears_P1,YearsSinceQuit_P1,Duration_Smoking_P1,Severe_Exacerbations_P1, Exacerbation_Frequency_P1, finalGold_P1, FEV1_FVC_utah_P1, FEV1_utah_P1, FEV1pp_utah_P1, FVC_utah_P1, pctEmph_Thirona_P1, AWT_seg_Thirona_P1, pctGasTrap_Thirona_P1, Visit_Date_P2, ccenter_P2, years_from_baseline, smoking_status_P2, Age_P2, VisitType_P2, Pi10_Thirona_P1, Height_CM_P2, Weight_KG_P2,                
+BMI_P2,distwalked_P2,SmokStopAge_P2,ATS_PackYears_P2, YearsSinceQuit_P2, Severe_Exacerbations_P2, Exacerbation_Frequency_P2, finalGold_P2, FEV1_FVC_utah_P2, FEV1_utah_P2, FEV1pp_utah_P2, FVC_utah_P2, Days_Phase1_Phase2, Change_P1_P2_Smoking_Status, smoking_status_change, pctEmph_Thirona_P2, Pi10_Thirona_P2, pctGasTrap_Thirona_P2, AWT_seg_Thirona_P2)
+
+#possibly useful data set
+mort_1 <- mort_adjud %>% select(sid, vital_status, mortality_survival_vetted, mortality_survival_vital_status, months_followed_net, months_followed_visits, months_followed_LFU, months_followed_SSDI_search, days_followed, mortality_cohort)
+
+#number of days since January 1, 1960 is the date.
+
+flat_1$followdays <- flat_1$Visit_Date_P2 - flat_1$Visit_Date_P1
+
+hist(flat_1$followdays)
+
+mean(na.exclude(flat_1$followdays))
+summary(na.exclude(flat_1$followdays))
+
+flat_1$diff_spiro_ratio <- flat_1$FEV1_FVC_utah_P2 -  flat_1$FEV1_FVC_utah_P1
+
+flat_1$diff_spiro_fev1 <- flat_1$FEV1_utah_P2 - flat_1$FEV1_utah_P1
+
+flat_1$diff_emphys <- flat_1$pctEmph_Thirona_P2 - flat_1$pctEmph_Thirona_P1
+
+flat_1$diff_gas_trap <- flat_1$pctGasTrap_Thirona_P2 - flat_1$pctGasTrap_Thirona_P1
+
+flat_1$diff_Pi10 <-  flat_1$Pi10_Thirona_P1 - flat_1$Pi10_Thirona_P2
+
+flat_1$diff_AWT <- flat_1$AWT_seg_Thirona_P1 - flat_1$AWT_seg_Thirona_P2
+
+
+flag_items <- as.data.frame(cbind(flat_1$diff_spiro_ratio,flat_1$diff_spiro_fev1, flat_1$diff_emphys, flat_1$diff_gas_trap, flat_1$diff_Pi10, flat_1$diff_AWT))
+
+names(flag_items) <- c("diff_ratio","diff_fev1", "diff_emph", "diff_gastrap", "diff_pi10", "diff_awt")
+```
+
+Gather the flat data set so that we can merge it with the LFU data and then the mortality data,
+
+```{r}
+
+
+wideflat_1 <- as.data.frame(flat_1) %>% select(sid, Visit_Date_P1, Visit_Date_P2, FEV1_FVC_utah_P1,FEV1_FVC_utah_P2, FEV1_utah_P1,FEV1_utah_P2, FVC_utah_P1,FVC_utah_P2, pctEmph_Thirona_P1, pctEmph_Thirona_P2, AWT_seg_Thirona_P1,  AWT_seg_Thirona_P2,  pctGasTrap_Thirona_P1,pctGasTrap_Thirona_P2, Pi10_Thirona_P1,Pi10_Thirona_P2)
+
+demographics <- as.data.frame(demo) %>% select(sid, gender, race)
+
+
+names(flat_1)
+library(reshape)
+library(reshape2)
+library(ggplot2)
+library(magrittr)
+library(dplyr)
+library(gridExtra)
+
+
+longp1p2<- reshape(wideflat_1,idvar='sid', direction='long', 
+        varying=list(c(2,3), c(4,5), c(6,7), c(8,9), c(10,11), c(12,13), c(14,15), c(16,17)),
+        timevar='visit',
+        times=c('p1', 'p2'),
+        v.names=c('visitdate','fev1_fvc', 'fev1', 'fvc', 'pct_emph', 'awt', 'pct_gastrap', 'pi10'))
+
+
+```
+
+
+
+Summary of Visits:
+
+
+
+
+```{r, include=FALSE}
+summaries <- function(x) {
+  y <- na.exclude(x)
+  minimum = round(min(y), digits =2)
+  #med = median(y)
+  maximum = round(max (y), digits=2)
+  mu = round(mean(y), digits =2 )
+  stdev = round(sd(y), digits=2)
+  quant <- round(quantile(y, c(.05, .5, .95)), digits =3)
+  N =  length(y)
+  allsummary <- c(mu, stdev, N, minimum, maximum, quant)
+  names(allsummary) <- c("Mean", "SD", "N", "Minimum", "Maximum", ".05",".5", ".95")
+  return(allsummary)
+}
+```
+
+
+Summary Tables of Outcomes of Interest
+```{r}
+outcome_table <- as.data.frame(t(sapply(flag_items, summaries)))
+outcome_table
+
+```
+
+Currently, they're using the 95 percentile to mark where they think a serious change in disease status would be for these markers. 
+
+This is obviously a fairly artificial marker. 
+```{r}
+
+flat_1$flag_spiro_ratio <- ifelse(flat_1$diff_spiro_ratio >= 0.09, 1, 0) 
+
+sum(na.exclude(flat_1$flag_spiro_ratio))
+
+flat_1$flag_fev1 <-  ifelse(flat_1$diff_spiro_fev1 >= 0.218, 1, 0)
+
+sum(na.exclude(flat_1$flag_fev1))
+
+flat_1$flag_emphys <-  ifelse(flat_1$diff_emphys >= 7.023, 1, 0)
+
+sum(na.exclude(flat_1$flag_emphys))
+
+flat_1$flag_gastrap <-  ifelse(flat_1$diff_gas_trap >= 17.165, 1, 0)
+
+sum(na.exclude(flat_1$flag_gastrap))
+
+flat_1$flag_Pi10 <-  ifelse(flat_1$diff_Pi10 >= 0.600, 1, 0)
+
+sum(na.exclude(flat_1$flag_Pi10))
+
+flat_1$flag_AWT <-  ifelse(flat_1$diff_AWT >= 0.189, 1, 0)
+
+sum(na.exclude(flat_1$flag_AWT))
+
+
+flat_1$flagcount <- flat_1$flag_spiro_ratio + flat_1$flag_fev1 + flat_1$flag_emphys + flat_1$flag_Pi10 + flat_1$flag_gastrap+flat_1$flag_AWT 
+
+table(flat_1$flagcount)
+
+#based on this table, we can see that most people only experience one of these markers if at all but nearly 3-4% of subjects experience two. There are 7 subjects that experience 4/6 markers of increased severity. 
+```
+
+In terms of the mortality dataset:
+
+
+```{r}
+length(mort_adjud$vital_status) #number of subjects in the cohort
+
+sum(na.exclude(mort_adjud$vital_status)) #number of deaths in the cohort
+
+summaries(mort_adjud$months_followed_net) #83 months of average follow up - lower 5% was 13
+
+summaries(mort_adjud$days_followed) # mean days followed was 2491.7 (little weird, 2065 was average days between visits - probably artifact from LFU data)
+
+
+#if we subset to only subjects who died:
+
+mort_dead <- subset(mort_adjud, mort_adjud$vital_status == 1)
+summaries(mort_dead$months_followed_net) #52 months of average follow up time, lower 5% was 7
+
+summaries(mort_dead$days_followed) # mean days followed was 1586.3
+```
+
+
+Merging the datasets:
+
+
+```{r}
+
+fulldata <- merge(flat_1,mort_adjud,by="sid")
+
+
+
+fulldata$sid <- as.factor(fulldata$sid)
+
+#subset only to people who had a visit 2 date. 
+
+fulldata$check2 <- ifelse(is.na(fulldata$Visit_Date_P2), 1, 0)
+
+datavisit2 <- subset(fulldata, fulldata$check2 == 0)
+
+#subset only to people who had a marked change in one of the the biomarkers of interest and a visit 2
+
+#datasicker <- subset(fulldata, fulldata$flagcount > 0)
+
+
+#Pull a random sample of subject ids to evaluate the biomarker progression of the subjects
+
+set.seed(245)
+randomsid <- sample(datavisit2$sid, 30, replace=FALSE)
+#$randomsidsick <- sample(datasicker$sid, 30, replace=FALSE)
+
+#create binary variable for where the item is true
+
+datavisit2$check <- ifelse(datavisit2$sid %in% randomsid, 1, 0)
+#datasicker$check <- ifelse(datasicker$sid %in% randomsidsick, 1, 0)
+#subset our dataframe to just have these values:
+randomdat <- subset(datavisit2, datavisit2$check == 1)
+
+#randomsick <- subset(datasicker, datasicker$check == 1)
+```
+
+
+Now make all of the necessary plots that show the progression of the different biomarkers. 
+
+Problem: need to change it to long format instead of wide.
+
+ This is for everyone in the data set, even those that don't hit the extra sick markers.
+```{r}
+widerandom <- randomdat %>% select(sid, Visit_Date_P1, Visit_Date_P2, FEV1_FVC_utah_P1,FEV1_FVC_utah_P2, FEV1_utah_P1,FEV1_utah_P2, FVC_utah_P1,FVC_utah_P2, pctEmph_Thirona_P1, pctEmph_Thirona_P2, AWT_seg_Thirona_P1,  AWT_seg_Thirona_P2,  pctGasTrap_Thirona_P1,pctGasTrap_Thirona_P2, Pi10_Thirona_P1,Pi10_Thirona_P2)
+
+library(reshape)
+library(reshape2)
+library(ggplot2)
+library(magrittr)
+library(dplyr)
+library(gridExtra)
+
+
+#great, now it's in long format and I can start creating the graphs that I need. 
+longrandom <- reshape(widerandom,idvar='sid', direction='long', 
+        varying=list(c(2,3), c(4,5), c(6,7), c(8,9), c(10,11), c(12,13), c(14,15), c(16,17)), #note that these are paired to match eachother
+        timevar='visit',
+        times=c('p1', 'p2'),
+        v.names=c('visitdate','fev1_fvc', 'fev1', 'fvc', 'pct_emph', 'awt', 'pct_gastrap', 'pi10'))
+
+
+#for practice: we'll just do it on one item first
+
+
+
+
+
+plotting <-function(x) {
+a <- ggplot(x, aes(log(visitdate), fev1_fvc)) + 
+  geom_point(color = 'purple') +geom_path(color = 'purple') + scale_x_continuous(breaks=seq(9.75,9.85, 9.96)) + xlab("log(day)") + ylim(0.2,1)
+b <- ggplot(x, aes(log(visitdate), fev1)) + 
+  geom_point(color = 'red') +geom_path(color = 'red') + scale_x_continuous(breaks=seq(9.75,9.85, 9.96)) + xlab("log(day)")+ ylim(0.5,4.25)
+c <- ggplot(x, aes(log(visitdate), fvc)) + 
+  geom_point(color='blue') +geom_path(color='blue') + scale_x_continuous(breaks=seq(9.75,9.85, 9.96)) + xlab("log(day)")+ ylim(1.5,5.3)
+d <- ggplot(x, aes(log(visitdate), pct_emph)) + 
+  geom_point(color='orangered') +geom_path(color='orangered') + scale_x_continuous(breaks=seq(9.75,9.85, 9.96)) + xlab("log(day)") + ylim(0,50)
+e <- ggplot(x, aes(log(visitdate), awt)) + 
+  geom_point(color = 'forestgreen') +geom_path(color = 'forestgreen') + scale_x_continuous(breaks=seq(9.75,9.85, 9.96)) + xlab("log(day)") + ylim(0.5,1.5)
+f <- ggplot(x, aes(log(visitdate), pct_gastrap)) + 
+  geom_point(color='magenta') +geom_path(color='magenta') + scale_x_continuous(breaks=seq(9.75,9.85, 9.96)) + xlab("log(day)") + ylim(0,76) 
+g <- ggplot(x, aes(log(visitdate), pi10)) + 
+  geom_point(color = 'darkblue') +geom_path(color = 'darkblue')  + scale_x_continuous(breaks=seq(9.75,9.85, 9.96)) + xlab("log(day)")+ ylim(1.3,4) 
+
+
+return(grid.arrange(a,b,c,d,e,f,g, ncol=7))
+
+}
+
+
+
+
+
+subjects <- unique(longrandom$sid)
+for (i in 1:30) {
+  x <- as.data.frame(subset(longrandom, longrandom$sid == subjects[i]))
+  a <- plotting(x)
+  a
+}
+
+
+
+
+```
+
+
+
+Change variables to fit data structures:
+
+```{r} 
+fulldata$gender <- as.factor(fulldata$gender)
+fulldata$race <- as.factor(fulldata$race)
+fulldata$ccenter_P1 <- as.factor(fulldata$ccenter_P1)
+fulldata$ccenter_P2 <- as.factor(fulldata$ccenter_P2)
+fulldata$finalGold_P1 <- as.factor(fulldata$finalGold_P1)
+fulldata$finalGold_P2 <- as.factor(fulldata$finalGold_P2)
+fulldata$EverSmokedCig_P1<- as.factor(fulldata$EverSmokedCig_P1)
+fulldata$smoking_status_P1<- as.factor(fulldata$smoking_status_P1)
+```
+
+Now for summary tables.
+
+We need to define the population of interest, that is; we want all subjects that either complete both visits or failed to complete both visits because they died before visit 1. 
+
+```{r}
+#subjects that died before visit 2:
+
+fulldata$deadearly <- ifelse(is.na(fulldata$Visit_Date_P2)& fulldata$vital_status==1, 1, 0)
+
+#subjects that made it to visit 2:
+fulldata$v2attend<- ifelse(!is.na(fulldata$Visit_Date_P2), 1, 0)
+
+#subjects that made it to visit 2 and are known to be dead
+
+fulldata$deadlater <- ifelse(fulldata$v2attend == 1 & fulldata$vital_status ==1, 1, 0)
+
+subjectdata <- subset(fulldata, fulldata$deadearly ==1 | fulldata$v2attend == 1 | fulldata$deadlater == 1)
+subjectdata$group1 <- rep(0, 8115)
+
+subjectdata$groupa <- ifelse(subjectdata$deadearly == 1, 1, subjectdata$group1)
+subjectdata$groupb <- ifelse(subjectdata$v2attend == 1, 2, subjectdata$groupa)
+subjectdata$group <- ifelse(subjectdata$deadlater == 1, 3, subjectdata$groupb)
+
+```
+
+
+
+
+Now, create a general table 1, then a table 1 for each of the other groups.
+
+```{r}
+library(tableone)
+## Vector of variables to summarize
+myVars <- c("Age_P1", "BMI_P1", "ATS_PackYears_P1", "FEV1_FVC_utah_P1", "FEV1_utah_P1", "FVC_utah_P1",
+            "pctEmph_Thirona_P1", "AWT_seg_Thirona_P1", "pctGasTrap_Thirona_P1","gender", "race", "EverSmokedCig_P1", "smoking_status_P1",
+             "finalGold_P1", "finalGold_P2")
+## Vector of categorical variables that need transformation
+catVars <- c("gender", "race", "EverSmokedCig_P1", "smoking_status_P1",
+             "finalGold_P1", "finalGold_P2")
+## Create  TableOne objects
+tab2 <- CreateTableOne(vars = myVars, data = subjectdata, factorVars = catVars)
+tab2 #values for all patients
+summary(tab2)
+
+
+```
+
+```{r}
+
+subjectdata$group <- as.factor(subjectdata$group)
+## Vector of variables to summarize
+myVars <- c("Age_P1", "BMI_P1", "ATS_PackYears_P1", "FEV1_FVC_utah_P1", "FEV1_utah_P1", "FVC_utah_P1",
+            "pctEmph_Thirona_P1", "AWT_seg_Thirona_P1", "pctGasTrap_Thirona_P1","gender", "race", "EverSmokedCig_P1", "smoking_status_P1",
+             "finalGold_P1", "finalGold_P2", "group")
+## Vector of categorical variables that need transformation
+catVars <- c("gender", "race", "EverSmokedCig_P1", "smoking_status_P1",
+             "finalGold_P1", "finalGold_P2", "group")
+## Create  TableOne objects
+tab3 <- CreateTableOne(vars = myVars, strata = c("group"), data = subjectdata, factorVars = catVars)
+tab3 #values for all patients
+summary(tab3)
+
+
+```
+
+```{r}
+
+#note, 2nd number is after cleaning for exclusionary diseases and for those subjects who had lung transplants
+sum(is.na(flat_1$Visit_Date_P2)) #3962 subjects did not have a visit 2 date (3946)
+sum(is.na(flat_1$Visit_Date_P1)) #349 subjects do not have a visit 1 date
+
+sum(is.na(flat_1$FEV1_utah_P2)) #4624 patients don't have fev1 for visit 2 (4601)
+sum(is.na(flat_1$FEV1_utah_P1)) #416 patients don't have fev1 for visit 1 (415)
+ 
+sum(is.na(flat_1$FEV1_FVC_utah_P2)) #4625 patients don't have fev1/fvc for visit 2 (4602)
+sum(is.na(flat_1$FEV1_FVC_utah_P1)) #416 patients don't have fev1/fvc for visit 1 (415)
+
+
+sum(is.na(flat_1$pctEmph_Thirona_P2)) #4995 patients don't have emphysema percentage for visit 2 (4956)
+sum(is.na(flat_1$pctEmph_Thirona_P1)) #1072 patients didn't have visit 1 emphysema (1068)
+
+sum(is.na(flat_1$AWT_seg_Thirona_P2)) #5000 patients don't have AWT measures for visit 2 (4961)
+sum(is.na(flat_1$AWT_seg_Thirona_P1)) #1073 patients dont' have AWT measures for visit 1 (1069)
+
+sum(is.na(flat_1$Pi10_Thirona_P2)) #4995 patients don't have Pi10 for visit 2 (4956)
+sum(is.na(flat_1$Pi10_Thirona_P1)) #1072 patients don't have Pi10 values for visit 1 (1068)
+
+
+sum(is.na(flat_1$pctGasTrap_Thirona_P2)) #5505 patients don't have gas trapping for visit 2 (5466)
+sum(is.na(flat_1$pctGasTrap_Thirona_P1)) #2435 patients don't have gas trapping for visit 1 (2424)
+
+```
+```{r}
+
+fulldata$copddeath <- ifelse(fulldata$Torch_UCD <= 3, 1,0)
+fulldata$respdeath <- ifelse(fulldata$Torch_UCD <= 4, 1,0)
+sum(na.exclude(fulldata$copddeath)) #446 subjects died definitely of COPD.
+sum(na.exclude(fulldata$respdeath)) #482 subjects died of something related to respiratory illness including COPD.
+
+table(fulldata$vital_status)
+sum(is.na(fulldata$vital_status))
+
+check <- subset(fulldata, fulldata$vital_status == 1)
+#all other deaths would be competing risks. 
+
+fulldata$comprisk <- cut(fulldata$Torch_UCD,breaks=c(0,3,4,19),labels=c("1","2", "3"))
+table(fulldata$comprisk)
+
+fulldata$comprisk <- ifelse(fulldata$vital_status == 0, 9, fulldata$comprisk)
+
+fulldata$comprisk <- ifelse(is.na(fulldata$comprisk), 7, fulldata$comprisk)
+
+table(fulldata$comprisk)
+sum(is.na(check$comprisk))
+
+
+```
+
+
+
+I also want to know what all of the potential movement can be between the different Gold groups.
+```{r}
+
+gold_2 <- subset(fulldata, fulldata$finalGold_P1 == -2)
+gold_1 <- subset(fulldata, fulldata$finalGold_P1 == -1)
+gold0<- subset(fulldata, fulldata$finalGold_P1 == 0)
+gold1<- subset(fulldata, fulldata$finalGold_P1 == 1)
+gold2<- subset(fulldata, fulldata$finalGold_P1 == 2)
+gold3<- subset(fulldata, fulldata$finalGold_P1 == 3)
+gold4<- subset(fulldata, fulldata$finalGold_P1 == 4)
+```
+```{r}
+# GOLD group -2, should be non-smokers
+table(gold_2$finalGold_P2)
+#deaths GOLD -2
+sum(gold_2$vital_status)
+
+table(gold_2$comprisk)
+sum(is.na(gold_2$finalGold_P2))
+
+table(is.na(gold_2$finalGold_P2), gold_2$comprisk)
+```
+```{r}
+# GOLD group -1, should be PRISM
+table(gold_1$finalGold_P2)
+#deaths GOLD -1, PRISM
+sum(gold_1$vital_status)
+table(gold_1$comprisk)
+sum(is.na(gold_1$finalGold_P2))
+table(is.na(gold_1$finalGold_P2), gold_1$comprisk)
+```
+```{r}
+# GOLD group 0, GOLD 0
+table(gold0$finalGold_P2)
+#deaths GOLD 0
+sum(gold0$vital_status)
+table(gold0$comprisk)
+sum(is.na(gold0$finalGold_P2))
+table(is.na(gold0$finalGold_P2), gold0$comprisk)
+```
+```{r}
+# GOLD group 1, GOLD 1
+table(gold1$finalGold_P2)
+#deaths GOLD 1
+sum(gold1$vital_status)
+table(gold1$comprisk)
+sum(is.na(gold1$finalGold_P2))
+table(is.na(gold1$finalGold_P2), gold1$comprisk)
+```
+```{r}
+# GOLD group 2, GOLD 2
+table(gold2$finalGold_P2)
+# deaths GOLD 2
+sum(gold2$vital_status)
+table(gold2$comprisk)
+sum(is.na(gold2$finalGold_P2))
+table(is.na(gold2$finalGold_P2), gold2$comprisk)
+```
+```{r}
+# GOLD group 3, GOLD 3
+table(gold3$finalGold_P2)
+#deaths GOLD 3
+sum(gold3$vital_status)
+table(gold3$comprisk)
+sum(is.na(gold3$finalGold_P2))
+table(is.na(gold3$finalGold_P2), gold3$comprisk)
+```
+```{r}
+# GOLD group 4, GOLD 4
+table(gold4$finalGold_P2)
+#deaths GOLD 4
+sum(gold4$vital_status)
+table(gold4$comprisk)
+sum(is.na(gold4$finalGold_P2))
+table(is.na(gold4$finalGold_P2), gold4$comprisk)
+```
+
+
+
+```{r}
+
+fulldata$packyears1 <- cut(merge6b$CASI_Total_wFxn,breaks=c(3,4,20),labels=c("low","high"))
+
+
+hist(fulldata$ATS_PackYears_P1)
+table(fulldata$smoking_status_P1,  fulldata$SmokingStatusChanges)
+
+table(fulldata$ATS_PackYears_P1, fulldata$SmokingStatusChanges)
+
+table(fulldata$smoking_status_P2,  fulldata$SmokingStatusChanges)
+
+table(fulldata$ATS_PackYears_P2, fulldata$SmokingStatusChanges)
+
+```
+
+```{r}
+library(ggplot2)
+unique(fulldata$ccenter_P1)
+breaks <- levels(unique(fulldata$finalGold_P2))
+
+onlyv2 <- subset(fulldata, !is.na(fulldata$finalGold_P2))
+onlyv2$finalGold_P2 <- as.factor(onlyv2$finalGold_P2)
+
+ggplot(data = onlyv2, aes(FEV1_utah_P1, FEV1_FVC_utah_P1, finalGold_P2, color = finalGold_P2)) + geom_point() + geom_vline(xintercept=0.8) +geom_hline(yintercept=0.7)
+
+
+```
+
+Let's try to do a basic model with mstate
+
+```{r}
+library(mstate)
+
+```
+
+
+
