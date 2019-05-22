@@ -1,0 +1,186 @@
+---
+title: "Between vs. Within for FeNO"
+author: "Melissa Lowe"
+date: "5.22.19"
+output: pdf_document
+---
+
+```{r global_options, include=FALSE}
+setwd("~/Desktop/ReproducibleItemsforDAPS")
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.path='Fig_BW_NO2PM10/')
+```
+\section*{ Exploration into Between and Within-Subject Effects} 
+
+
+\begin{align*}
+        log(FeNO) &= b_{o}+ \beta_{b}\overline{x_{i}}_{exp} + \beta_{w}(X_{ij}-\overline{x_{i}})_{exp} + \epsilon_{i}
+\end{align*}
+
+Where $\beta_{b}$ is the average change in log(FeNO) for a given subject and $\beta_{w}$ is the average additional contribution to log(FeNO) per study visit. 
+```{r, include=FALSE}
+
+library(msm)
+library(sandwich)
+library(ggplot2)
+library(foreign)
+library(ggplot2)
+library(MASS)
+library(Hmisc)
+library(reshape2)
+library(pbkrtest)
+library(lme4)
+library(lmerTest)
+library(nlme)
+library(dplyr)
+library(RColorBrewer)
+library(rmcorr)
+library(table1)
+```
+
+```{r, include=FALSE}
+setwd("~/Desktop/ReproducibleItemsforDAPS")
+
+ddat <- read.csv("~/Desktop/ReproducibleItemsforDAPS/DAPS_AllCohort.csv") #import data set
+
+ddat$id <- as.factor(ddat$id) #ensure that it's treated as a factor
+
+ddat <- as.data.frame(ddat[c(2:19, 28:31, 39:49,73 )])
+#id:fef, pm10:
+
+datas <- subset(ddat, cohort==2)
+
+datas <- as.data.frame(datas[c(1,2,3,5,6,7,9,19,21, 30)])
+
+used <-na.exclude(datas)
+
+```
+
+```{r, include=FALSE}
+#FENO_dat long
+
+
+FeNOdat <- as.data.frame(used[c(1,2, 7)])
+
+FeNOdat2 <- reshape(FeNOdat, idvar = "id", timevar = "visit", direction = "wide")
+
+FeNOdat2$mean_FeNO <- rowMeans(FeNOdat2[,2:4], na.rm=TRUE)
+
+FeNOdatlong <- reshape(FeNOdat2)
+
+FeNOdatlong$diff_feno <- FeNOdatlong$log_FeNO_avg.1- FeNOdatlong$mean_FeNO
+
+#pm10 dat long
+
+pm10dat <- as.data.frame(used[c(1,2, 8)])
+pm10dat$pm10 <- exp(pm10dat$log_vest_pm10)
+pm10dat <- pm10dat[ ,-3]
+pm10dat2 <- reshape(pm10dat, idvar = "id", timevar = "visit", direction = "wide")
+
+pm10dat2$mean_pm10 <- rowMeans(pm10dat2[,2:4], na.rm=TRUE)
+
+pm10datlong <- reshape(pm10dat2)
+
+pm10datlong$diffpm10 <- pm10datlong$pm10.1-pm10datlong$mean_pm10
+
+#no2dat long
+
+no2dat <- as.data.frame(used[c(1,2, 9)])
+no2dat$no2 <- exp(no2dat$log_vest_NO2)
+no2dat <- no2dat[,-3]
+
+no2dat2 <- reshape(no2dat, idvar = "id", timevar = "visit", direction = "wide")
+
+no2dat2$mean_no2 <- rowMeans(no2dat2[,2:4], na.rm=TRUE)
+
+no2datlong <- reshape(no2dat2)
+
+no2datlong$diffNO2 <- no2datlong$no2.1-no2datlong$mean_no2
+
+#SUBSET ddat to only the items we're interested in:
+
+placeholder <- used[,c(1:6)]
+
+merge1 <- merge(placeholder, FeNOdatlong, by = c("id","visit"), all=TRUE)
+merge2 <- merge(merge1, no2datlong, by = c("id","visit"), all=TRUE)
+merge3 <- merge(merge2, pm10datlong, by = c("id","visit"), all=TRUE)
+
+colnames(merge3) <- c("id","visit","season","age","gender","race_afam","mean_FeNO", "log_FeNO_avg","diff_feno","mean_no2","vest_NO2","diffNO2","mean_pm10","vest_pm10","diffpm10")
+
+dat <- merge3
+```
+
+
+\begin{align*}
+        \bold{X_{axis}} &= \overline{x_{i}}  \textrm{ = average exposure across all visits for subject i} \end{align*}
+
+
+\begin{align*}
+        \bold{Y_{axis}} &= x_{ij} - \overline{x_{i}}  \textrm{ = exposure at visit j -average exposure across all visits for subject i.} \end{align*} 
+
+
+
+```{r, echo=FALSE}
+  ggplot(data = dat) + geom_point(aes(x = mean_pm10, y = diffpm10)) +geom_smooth(aes(x = mean_pm10, y = diffpm10),method="lm", color="gray") + xlab("Average Individual PM10")+ ylab("Visit PM10 - Average PM10")+ labs(title = "Personal Monitoring: PM10")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+theme(plot.title=element_text(family="Times", face="bold", size=15)) 
+```
+
+
+
+
+```{r, echo=FALSE}
+ggplot(data = dat) + geom_point(aes(x = mean_no2, y = diffNO2)) +geom_smooth(aes(x = mean_no2, y = diffNO2),method="lm", color="gray") + xlab("Average Individual NO2")+ ylab("Visit NO2 - Average NO2")+ labs(title = "Personal Monitoring: NO2")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+theme(plot.title=element_text(family="Times", face="bold", size=15)) 
+```
+
+
+```{r, echo=FALSE}
+
+ggplot(data = dat) + 
+  geom_point(aes(x = log(mean_pm10), y = log_FeNO_avg, color="PM10"))+
+  geom_smooth(aes(x = log(mean_pm10), y = log_FeNO_avg, color="PM10"), method="lm" ) +
+  geom_point(aes(x = log(mean_no2), y = log_FeNO_avg, color="NO2"))+
+  geom_smooth(aes(x = log(mean_no2), y = log_FeNO_avg, color="NO2"),method="lm")+
+  xlab("Pollutant Exposure")+ 
+  ylab("log(FeNO)")+
+  scale_color_manual(name='', values=c('NO2'='navy', 'PM10'='red'))+
+  labs(title = "Personal Monitoring: Exhaled Nitric Oxide" )+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  theme(plot.title=element_text(family="Times", face="bold", size=15)) 
+
+
+
+
+```
+
+```{r, echo=FALSE}
+
+ggplot(data = dat) + 
+ geom_point(aes(x = diffpm10, y = log_FeNO_avg, color="PM10"))+
+  geom_point(aes(x = diffNO2, y = log_FeNO_avg, color="NO2"))+
+  xlab("Pollutant Exposure Difference from Mean")+ 
+  ylab("log(FeNO)")+
+  scale_colour_manual(name='', values=c('NO2'='navy', 'PM10'='red'))
+  labs(title = "Personal Monitoring: Exhaled Nitric Oxide" )+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  theme(plot.title=element_text(family="Times", face="bold", size=15)) 
+```
+
+
+
+```{r}
+
+model <- lmer(log_FeNO_avg ~ log(mean_pm10)  + diffpm10 + race_afam + age +as.factor(season) + (1|id), data = dat) 
+
+summary(model)
+```
+
+
+A brief summary of this can be interpreted as, the contribution to the health outcome of FeNO appears in this singular model to be driven by the average value of exposure for a subject - not the variation within the subject. We could say that a one percentage change in mean PM10 exposure results in an approximately 54.7% increase in FeNO. However, based on the limitations of the numbers of analyses done, this non-zero interpretation is questionable without more rigorous correction for multiple comparisons. 
+
+```{r}
+model2 <- lmer(log_FeNO_avg ~ log(mean_no2) + diffNO2 + race_afam + age + gender + as.factor(season) + (1|id), data =dat)
+
+summary(model2)
+```

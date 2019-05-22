@@ -1,0 +1,129 @@
+---
+title: "DAPS_Data Management"
+author: "Melissa Lowe"
+date: "11/29/2018"
+output: html_document
+---
+
+This was rerun with new carbon data to produce new clean datasets. 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Libraries
+```{r}
+library(readxl)
+library(utils)
+library(reshape2)
+library(plyr)
+```
+
+Original Data Files
+
+```{r}
+setwd("~/Desktop/ReproducibleItemsforDAPS")
+
+name.gluc <- c("visit", "num", "id", "sample", "pm_wt", "endo_ml", "gluc_ml", "endo_m3", "gluc_m3", "note")
+name.demo <- c("id", "visit", "season", "cohort", "X__1", "age", "gender", "race_afam", "X__2","X__3","X__4","X__5","X__6","X__7")
+
+end_gluc <- read_excel("endoglucanfilters_09272018.xlsx", col_names = name.gluc, skip=2)
+demographics <- read_excel("DAPS_Primary_DataSet_180902.xlsx", col_names=name.demo, sheet = "Demographic Predictors", skip=1)
+cont_outcomes<- read_excel("DAPS_Primary_DataSet_180902.xlsx", sheet = "Continuous Outcome Variables")
+cont_exp_var <- read_excel("DAPS_Primary_DataSet_180902.xlsx", sheet = "Continuous Exposure Variables")
+cat_exp_var <- read_excel("DAPS_Primary_DataSet_180902.xlsx", sheet = "Zero-Heavy & Categ. Exposures")
+cat_outcomes<- read_excel("DAPS_Primary_DataSet_180902.xlsx", sheet = "Categorical Outcomes")
+exacerbation_count <- read_excel("DAPS_Primary_DataSet_180902.xlsx", sheet = "ExacerbationsSinceLastVisit")
+newcarbon <- read_excel("DAPS_CarbonData_112818.xlsx")
+```
+Making sure that the data is in the right format
+```{r}
+end_gluc$visit <- as.numeric(end_gluc$visit)
+end_gluc$endo_ml <- as.numeric(end_gluc$endo_ml)
+end_gluc$endo_m3 <- as.numeric(end_gluc$endo_m3)
+end_gluc$gluc_m3 <- as.numeric(end_gluc$gluc_m3)
+
+
+unique(end_gluc$id)
+```
+Merging
+
+```{r}
+merge1 <- merge(demographics, cont_outcomes, by = c("id","visit","season","cohort", "X__1"), all=TRUE)
+merge2 <- merge(merge1, cont_exp_var, by = c("id","visit","season","cohort", "X__1"), all=TRUE)
+merge3 <- merge(merge2, cat_outcomes, by = c("id","visit","season","cohort", "X__1"), all=TRUE)
+merge4 <- merge(merge3, cat_exp_var, by = c("id","visit","season","cohort", "X__1"), all=TRUE)
+merge5 <- merge(merge4, end_gluc, by = c("id", "visit"), all.x=TRUE)
+
+merge6 <- merge(merge5, newcarbon, by = c("id", "visit", "X__1", "X__2","X__3", "X__4"), all.x=TRUE)
+
+#get rid of excess columns and old data
+merge6 <- subset(merge6, select = -c(X__1,X__2,X__3,X__4, X__5, X__6, X__7, vest_ETS_adj0,vest_BrC_adj0, vest_BC_adj0, msp_ETS_adj0, msp_BrC_adj0, msp_BC_adj0))
+
+#change column names
+
+col_merge6 <-c("id","visit", "season", "cohort","age","gender","race_afam", "FeNO_avg","log_FeNO_avg","FEV1_pp_GLI","FEV1_Zscore_GLI", "FVC_pp_GLI", "FVC_Zscore_GLI","FEV1_FVC", "FEV1_FVC_pp_GLI","FEV1_FVC_Zscore_GLI" ,"FEF2575_pp_GLI","FEF2575_Zscore_GLI","cbc_wbc","log_cbc_wbc" ,
+               "cbc_abs_eos","cbc_abs_neut","log_cbc_abs_neut","cbc_percent_eos",
+               "cbc_percent_neut","log_cbc_percent_neut","log_vest_pm10","log_vest_ETS","log_vest_BrC", "log_msp_pm10","log_msp_BC","log_vest_NO2",
+               "log_stat_NO2","vest_O3","CDPHE_PM10_mean","log_CDPHE_PM10_max",
+               "log_CDPHE_NO2_mean","log_CDPHE_NO2_max" ,"CDPHE_O3_mean","CDPHE_O3_max","CASI_Day","CASI_Night", "CASI_Function","CASI_Medication","CASI_Exacerbation","CASI_Exac_5a","CASI_Exac_5b","CASI_Total_NoFxn","CASI_Total_wFxn",
+               "CACT_ACT_Cat","CACT_ACT_cont", "Burst_2months","Hospital_2months", "DrVisit_2months","ExacerbationAtVisit","nicalert", 
+               "num" ,"sample","pm_wt","endo_ml", "gluc_ml","endo_m3","gluc_m3", "note","vest_ETS","vest_BrC", "vest_BC","vest_ETS-BrC_MDL","vest_BC_MDL", "MSP_ETS","MSP_BrC","MSP_BC","MSP_ETS_BrC_MDL", "MSP_BC_MDL")
+colnames(merge6)  <- col_merge6   
+
+merge6 <- subset(merge6, select = -c(log_vest_ETS,log_vest_BrC,log_msp_BC))
+
+
+```
+
+
+
+```{r}
+
+# Change gender to 0,1 just so it's quick and easy to interpret:
+#Make sure we don't lose people for not stating their race
+
+merge6$gender[is.na(merge6$gender)] <- "Missing"
+merge6$race_afam[is.na(merge6$race_afam)] <- "Missing"
+merge6$race_afam <- ifelse(merge6$race_afam ==1, "Yes", merge6$race_afam)
+merge6$race_afam <- ifelse(merge6$race_afam == 0, "No", merge6$race_afam)
+
+merge6$age <- as.numeric(merge6$age)
+merge6$ageCat <- cut(merge6$age,breaks=c(7,11,17),labels=c("8-11","12-17"))
+merge6$CASI_Total_wFxnCat <- cut(merge6$CASI_Total_wFxn,breaks=c(3,4,20),labels=c("low","high"))
+merge6$season_2 <- ifelse(merge6$season == 4,3,merge6$season)
+
+
+```
+
+
+```{r}
+merge7 <- subset(merge6, cohort== 2)
+
+merge8 <- subset(exacerbation_count, cohort==2)
+
+merge9 <- merge(merge7, merge8, by = c("id", "cohort"))
+
+mergea <- subset(merge6, cohort == 1)
+mergeb <- subset(exacerbation_count, cohort == 1)
+
+mergec <- merge(mergea, mergeb, by = c("id", "cohort"))
+
+```
+
+
+Export csv files. The names of the output files to be used for further DAPS analysis are:
+
+**DAPS_AllCohort.csv**
+**DAPS_2Cohort.csv**
+**DAPS_1Cohort.csv**
+
+
+```{r}
+
+setwd("~/Desktop/ReproducibleItemsforDAPS")
+write.csv(merge6, file = "DAPS_AllCohort.csv", na= "NA") #all subjects
+write.csv(merge7, file = "DAPS_2Cohort.csv", na = "NA") #just cohort 2
+write.csv(mergea, file = "DAPS_1Cohort.csv", na = "NA") #just cohort 1
+
+```
