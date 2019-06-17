@@ -422,7 +422,101 @@ testing2 <- rbind(testing, deadpool3) #ok, now every dead person has an addition
 
 
 
+Ok. I need to create a table of informative deaths. 
 
+Descriptive table of cause of death...and other characteristics. 
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(stringi)
+library(stringr)
+
+
+M<-names(mort_adjud) <- c("sid","vital_status", "mortality_survival_vetted","mortality_survival_vital_status", "months_followed_net" , "months_followed_visits","months_followed_LFU", "months_followed_SSDI_search", "days_followed","mortality_cohort","SSDI_searched"               ,"death_cause_adjud","Torch_UCD","Torch_UCD_description","Torch_UCD_Other_specify","Torch_Group_Basic","Torch_Group_Basic_descrip"      ,"Torch_UCD_COPD_related","CCOD_COPD_Exac_w_Pneu","CCOD_COPD_Exac_wo_Pneu","CCOD_COPD_no_exac", "CCOD_OthResp","CCOD_MI",                         "CCOD_Stroke","CCOD_DVT","CCOD_OthCardiac","CCOD_SuddenDeath","CCOD_SuddenCardiac","CCOD_LungCancer","CCOD_OthCancer","CCOD_Renal","CCOD_Diabetes","CCOD_Sepsis","CCOD_Accdnt_suicd","CCOD_OthDis","CCOD_UnknownFactor","CCOD_Accdnt_Details", "CCOD_COPD_resp","CCOD_CVD",                        "CCOD_Cancer","CCOD_Other","AnyCancerDx","CancerImpact","source_DeathCert","source_InformInterview","source_MedicalRec","source_Other","source_None","InfoAssessment", "Comorbidity_CoronaryArtery","Comorbidity_LungCancer","Comorbidity_Osteopors","Comorbidity_AnxDepr","Comorbidity_Diabetes",    "AdjudUCD_MatchDeathCert_12","AdjudUCD_MatchDeathCert_any","COPD_on_DeathCert") 
+allnames2 <-sapply(M, function(x) {
+  strsplit(x, "CCOD_")
+})
+allnames2 <- unlist(allnames2)
+allnames3 <- stri_remove_empty(allnames2, na_empty = FALSE)
+names(mort_adjud) <- allnames3
+two <- mort_adjud[c(19:41)]
+M2 <- names(two)
+M2
+
+
+mort_adjud$COPD_Exac_w_Pneu <- ifelse(mort_adjud$COPD_Exac_w_Pneu == 1, "COPD_Exac_w_Pneu",mort_adjud$COPD_Exac_w_Pneu )
+
+mort_adjud$COPD_Exac_wo_Pneu <- ifelse(mort_adjud$COPD_Exac_wo_Pneu == 1, "COPD_Exac_wo_Pneu",mort_adjud$COPD_Exac_wo_Pneu)
+
+mort_adjud$COPD_no_exac <- ifelse(mort_adjud$COPD_no_exac == 1, "COPD_no_exac",mort_adjud$COPD_no_exac)
+
+mort_adjud$OthResp <- ifelse(mort_adjud$OthResp == 1, "OthResp",mort_adjud$OthResp)
+
+mort_adjud$MI <- ifelse(mort_adjud$MI == 1, "MI",mort_adjud$MI)
+
+mort_adjud$Stroke <- ifelse(mort_adjud$Stroke == 1, "Stroke",mort_adjud$Stroke)
+
+mort_adjud$DVT <- ifelse(mort_adjud$DVT == 1, "DVT",mort_adjud$DVT)
+
+mort_adjud$OthCardiac <- ifelse(mort_adjud$OthCardiac == 1, "OthCardiac",mort_adjud$OthCardiac)
+
+mort_adjud$SuddenDeath <- ifelse(mort_adjud$SuddenDeath== 1, "SuddenDeath",mort_adjud$SuddenDeath)
+
+mort_adjud$SuddenCardiac <- ifelse(mort_adjud$SuddenCardiac == 1, "SuddenCardiac",mort_adjud$SuddenCardiac)
+
+mort_adjud$LungCancer <- ifelse(mort_adjud$LungCancer== 1, "LungCancer",mort_adjud$LungCancer)
+
+mort_adjud$OthCancer <- ifelse(mort_adjud$OthCancer == 1, "OthCancer",mort_adjud$OthCancer)
+
+mort_adjud$Renal <- ifelse(mort_adjud$Renal== 1, "Renal",mort_adjud$Renal)
+
+mort_adjud$Diabetes <- ifelse(mort_adjud$Diabetes == 1, "Diabetes",mort_adjud$Diabetes)
+
+mort_adjud$Sepsis <- ifelse(mort_adjud$Sepsis == 1, "Sepsis",mort_adjud$Sepsis)
+
+mort_adjud$Accdnt_suicd <- ifelse(mort_adjud$Accdnt_suicd == 1, "Accdnt_suicd",mort_adjud$Accdnt_suicd)
+
+mort_adjud$OthDis <- ifelse(mort_adjud$OthDis == 1, "OthDis",mort_adjud$OthDis)
+
+mort_adjud$UnknownFactor <- ifelse(mort_adjud$UnknownFactor == 1, "UnknownFactor",mort_adjud$UnknownFactor)
+
+mort_adjud$COPD_resp <- ifelse(mort_adjud$COPD_resp == 1, "COPD_resp",mort_adjud$COPD_resp)
+
+mort_adjud$CVD <- ifelse(mort_adjud$CVD == 1, "CVD",mort_adjud$CVD)
+
+mort_adjud$Cancer <- ifelse(mort_adjud$Cancer== 1, "Cancer",mort_adjud$Cancer)
+
+mort_adjud$Other <- ifelse(mort_adjud$Other == 1, "Other",mort_adjud$Other)
+
+mort_adjud$Accdnt_Details <- as.factor(mort_adjud$Accdnt_Details)
+
+levels(mort_adjud$Accdnt_Details)[levels(mort_adjud$Accdnt_Details)=="1"] <- "accident"
+levels(mort_adjud$Accdnt_Details)[levels(mort_adjud$Accdnt_Details)=="2"] <- "suicide"
+levels(mort_adjud$Accdnt_Details)[levels(mort_adjud$Accdnt_Details)=="3"] <- "drug"
+
+
+mort_adjud2 <- mort_adjud
+
+two <- mort_adjud2[c(19:41)]
+names(two)
+library(dplyr)
+unite_(mort_adjud2, "CCOD", c("COPD_Exac_w_Pneu","COPD_Exac_wo_Pneu","COPD_no_exac","OthResp","MI","Stroke","DVT","OthCardiac","SuddenDeath","SuddenCardiac","LungCancer","OthCancer","Renal", "Diabetes","Sepsis","Accdnt_suicd","OthDis","UnknownFactor", "Accdnt_Details","COPD_resp","CVD","Cancer", "Other"))
+
+be <- lapply(two, function(x) {
+ a<- as.data.frame(table(x))
+})
+
+be2 <- as.data.frame(do.call("rbind", be))
+names(be2) <- c("cause", "frequency")
+head(be2)
+be2$titles <- row.names(be2)
+names(be2)
+be2 <- as.data.frame(be2)
+
+write.table(be2, file="CCOD_COPD.csv", row.names=FALSE, col.names=TRUE, sep=",", na="NA", eol = "\n")
+
+```
 
 
 
