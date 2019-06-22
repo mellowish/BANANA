@@ -8,6 +8,7 @@ output: pdf_document
 ```{r global_options, include=FALSE}
 knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.path='prelimfigs/')
 ```
+
 Import Data:
 
 ```{r}
@@ -17,8 +18,7 @@ setwd("~/Desktop/COPDGeneData")
 
 ```{r}
 library(haven)
-mort_adjud <- read_dta("~/Desktop/COPDGeneData/Mortality_Jan2019.dta", 
-    NULL)
+mort_adjud <- read_dta("~/Desktop/COPDGeneData/Mortality_Jan2019.dta", NULL)
 ```
 ```{r}
 LFUsurv<- read_sas("~/Desktop/COPDGeneData/anc348_lfu_rev.sas7bdat",NULL)
@@ -32,52 +32,7 @@ copd_p1p2 <- read_sas("~/Desktop/COPDGeneData/copdgene_p1p2_all_visit_30dec18.sa
 #copdgene_p1p2_flat <- read_dta("~/Desktop/COPDGeneData/P1P2_Pheno_Flat_All_sids_Dec18.dta",     NULL)
 ```
 
-LFU DATA EVALUATION:
 
-```{r}
-hist(LFUsurv$surveyNum)
-
-library(ggplot2)
-
-ggplot(LFUsurv, aes(surveyNum)) +
-  geom_histogram(bins = 50, fill="blue")+
-  scale_x_continuous("Number of Surveys", breaks=c(0:20)) +ylab("Count") + ggtitle("# of surveys completed per patient \n during study") + theme(
-plot.title = element_text(color="black", size=14, face="bold")
-)
-
-
-ggplot(LFUsurv, aes(MonthsSinceInitialVisit)) +
-  geom_histogram(bins = 131, fill="gray20", color="black")+
-  scale_x_continuous("Months of Follow-Up Since First Visit", breaks=c(1, 50, 100, 130)) +ylab("Count") + ggtitle("# of months since initial visit") + theme(
-plot.title = element_text(color="black", size=14, face="bold")
-)
-
-ggplot(LFUsurv, aes(ER_times)) +  geom_histogram(bins = 131, fill="gray20", color="black")+
-  scale_x_continuous("#ER", breaks=c(1, 50, 100, 130)) +ylab("Count") + ggtitle("# of ER Since Last Visit") + theme(
-plot.title = element_text(color="black", size=14, face="bold")
-)
-
-ggplot(LFUsurv, aes(Antib_steroid_times)) +  geom_histogram(bins = 131, fill="gray20", color="black")+
-  scale_x_continuous("#Episodes", breaks=c(1, 50, 100, 130)) +ylab("Count") + ggtitle("# of Episodes Since Last Visit") + theme(
-plot.title = element_text(color="black", size=14, face="bold")
-)
-ggplot(LFUsurv, aes(Hosp_times)) +  geom_histogram(bins = 131, fill="gray20", color="black")+
-  scale_x_continuous("#Hospitalizations", breaks=c(1, 50, 100, 130)) +ylab("Count") + ggtitle("# of Hospitalizations Since Last Visit") + theme(
-plot.title = element_text(color="black", size=14, face="bold")
-)
-
-ggplot(LFUsurv, aes(Net_Exacerbations)) +  geom_histogram(bins = 131, fill="gray20", color="black")+
-  scale_x_continuous("# Total Exacerbations", breaks=c(1, 50, 100, 130)) +ylab("Count") + ggtitle("# Exacerbations") + theme(
-plot.title = element_text(color="black", size=14, face="bold")
-)
-
-ggplot(LFUsurv, aes(Net_Severe_Exac)) +  geom_histogram(bins = 131, fill="gray20", color="black")+
-  scale_x_continuous("# Severe Exacerbations", breaks=c(1, 50, 100, 130)) +ylab("Count") + ggtitle("# Severe Exacerbations") + theme(
-plot.title = element_text(color="black", size=14, face="bold")
-)
-
-
-```
 
 Data Cleaning for LFU Dataset:
 ```{r}
@@ -120,58 +75,7 @@ LFUsurv$Net_Severe_Exac <- as.numeric(LFUsurv$Net_Severe_Exac)
 
 ```
 
-```{r}
 
-
-ggplot(LFUsurv,aes(x=ER_times,group=SurveyYear,fill=SurveyYear))+
-  geom_histogram(position="dodge",alpha=0.8,binwidth=1) +
-  xlab("ER_Times")+
-  ylab("Count")+
-  scale_y_log10()+
-  labs(title = "ER Visits by Survey Type Administered")+
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))+
-  theme(plot.title=element_text(family="Times", face="bold", size=10)) 
-
-
-ggplot(LFUsurv,aes(x=Antibiotic_times,group=SurveyYear,fill=SurveyYear))+
-  geom_histogram(position="dodge",alpha=0.8,binwidth=1) +
-  xlab("Antibiotic Presc. Count")+
-  ylab("Count")+
-  scale_y_log10()+
-  labs(title = "Antibiotic Prescr. by Survey Type Administered")+
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))+
-  theme(plot.title=element_text(family="Times", face="bold", size=10)) 
-
-
-ggplot(LFUsurv,aes(x=Steroid_times,group=SurveyYear,fill=SurveyYear))+
-  geom_histogram(position="dodge",alpha=0.8,binwidth=1) +
-  xlab("Steroid Presc. Count")+
-  ylab("Count")+
-  scale_y_log10()+
-  labs(title = "Steroid Prescr. by Survey Type Administered")+
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))+
-  theme(plot.title=element_text(family="Times", face="bold", size=10)) 
-
-ggplot(LFUsurv,aes(x=UrgentDr_times,group=SurveyYear,fill=SurveyYear))+
-  geom_histogram(position="dodge",alpha=0.8,binwidth=1) +
-  xlab("Urgent Dr. Visit Count")+
-  ylab("Count")+
-  scale_y_log10()+
-  labs(title = "Urgent Dr. Visit by Survey Type Administered")+
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))+
-  theme(plot.title=element_text(family="Times", face="bold", size=10)) 
-
-
-ggplot(LFUsurv,aes(x=Antib_steroid_times,group=SurveyYear,fill=SurveyYear))+
-  geom_histogram(position="dodge",alpha=0.8,binwidth=1) +
-  xlab("Antibiotic or Steroid Presc. Count")+
-  ylab("Count")+
-  scale_y_log10()+
-  labs(title = "Antibiotic or Steroid Presc. by Survey Type Administered")+
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))+
-  theme(plot.title=element_text(family="Times", face="bold", size=10)) 
-
-```
 
 
 ```{r}
@@ -205,7 +109,7 @@ mort_adjud$sid <- as.character(mort_adjud$sid)
 ```
 
 Let's try to merge the LFU dataset with the copd_p1p2 dataset
-```{r}
+
 
 #I didn't have a great idea of what was in the data set so I've broken it up here into more specific groups. 
 
@@ -244,7 +148,7 @@ genptinfo <- nombres_all[c(1:6,8:13,15, 22,23,30, 31, 37)]
 
 
 
-```
+
 Merge the datasets:
 
 ```{r}
@@ -262,6 +166,9 @@ copd3 <- subset(copd2, visitnum==1)[,c(1,3,29)] #10371 are visit 1
 copd4 <- subset(copd2, visitnum == 2)[,c(1,3,29)]#6758 are visit 2 (5717 completed p1p2 and spirometry)
 
 
+
+
+
 names(copd3) <- c("sid", "visitnum", "finalgold1")
 names(copd4) <- c("sid", "visitnum", "finalgold2")
 #every subject id and every row needs to have finalgold1 and finalgold2 even if they are empty. 
@@ -273,9 +180,14 @@ copd5 <- merge(copd2,copd3,by=c("sid"), all.x=TRUE)
 copd6 <- merge(copd5,copd4, by=c("sid"), all.x=TRUE)
 
 
+
+
 #I think i need to merge copd4 and copd3 in with the main copd2 dataset. This will require a merge, not a column bind because there are differing numbers of rows - we'll match based on subject id. 
 
 #I want every row to have finalgold1 and finalgold2 so that I can use these for summary statistics. Conveniently, we'll also keep finalgold as a general variable that we can use for time-varying covariates if we want to.
+
+
+# AS OF MAY 2019, WE DECIDED THAT WE WANT EACH ROW TO HAVE ALL PHENOTYPIC CHARACTERISTICS WHICH BRINGS UP THE QUESTION OF WHETHER WE EVEN WANT TO USE THE LONG DATASET. I'm going to make a new dataset to do this now. 
 
 library(dplyr)
 
@@ -298,6 +210,18 @@ check3 <- subset(check2, check2$drop == 1)
 #make sure we have the right number of subjects: 
 #length(unique(check3$sid)) #10720
 #length(unique(copd_p1p2$sid)) #10720
+
+
+### OK. SOMEWHERE IN HERE, I NEED TO MAKE DECISIONS ABOUT WHAT IS GOING TO MAINTAINED IN EACH ROW SO THAT SUBJECTS AREN'T NECESSARILY USING TIME=VARYING COVARIATES - THIS NEEDS TO HAPPEN BEFORE WE INCLUDE LFUSURV. 
+
+
+
+
+
+
+
+
+
 
 # make a count of how many surveys were completed by each subject
 surveyrep <- LFUsurv %>%
@@ -416,7 +340,7 @@ names(deadpool3) <- bab #make those into the names for deadpool 3. First the dea
 testing2 <- rbind(testing, deadpool3) #ok, now every dead person has an additional row.
 
 
-
+testing2
 
 ```
 
@@ -443,65 +367,99 @@ names(mort_adjud) <- allnames3
 two <- mort_adjud[c(19:41)]
 M2 <- names(two)
 M2
+### _____________________________LUNG RELATED DEATH ONLY________________________________________________ ###
 
 
-mort_adjud$COPD_Exac_w_Pneu <- ifelse(mort_adjud$COPD_Exac_w_Pneu == 1, "COPD_Exac_w_Pneu",mort_adjud$COPD_Exac_w_Pneu )
+mort_adjud$ccod_lung <- ifelse(mort_adjud$COPD_Exac_w_Pneu == 1 | mort_adjud$COPD_Exac_wo_Pneu == 1 | mort_adjud$COPD_no_exac == 1 | mort_adjud$OthResp == 1 | mort_adjud$COPD_resp == 1 | mort_adjud$LungCancer ==1 , 1, 0)
+table(mort_adjud$ccod_lung)
 
-mort_adjud$COPD_Exac_wo_Pneu <- ifelse(mort_adjud$COPD_Exac_wo_Pneu == 1, "COPD_Exac_wo_Pneu",mort_adjud$COPD_Exac_wo_Pneu)
+### _____________________________LUNG RELATED DEATH ONLY________________________________________________ ###
 
-mort_adjud$COPD_no_exac <- ifelse(mort_adjud$COPD_no_exac == 1, "COPD_no_exac",mort_adjud$COPD_no_exac)
+mort_adjud$ccod_mult <- rowSums(mort_adjud[c(19:41)], na.rm=TRUE)
 
-mort_adjud$OthResp <- ifelse(mort_adjud$OthResp == 1, "OthResp",mort_adjud$OthResp)
+table(mort_adjud$ccod_mult,mort_adjud$vital_status) 
 
-mort_adjud$MI <- ifelse(mort_adjud$MI == 1, "MI",mort_adjud$MI)
-
-mort_adjud$Stroke <- ifelse(mort_adjud$Stroke == 1, "Stroke",mort_adjud$Stroke)
-
-mort_adjud$DVT <- ifelse(mort_adjud$DVT == 1, "DVT",mort_adjud$DVT)
-
-mort_adjud$OthCardiac <- ifelse(mort_adjud$OthCardiac == 1, "OthCardiac",mort_adjud$OthCardiac)
-
-mort_adjud$SuddenDeath <- ifelse(mort_adjud$SuddenDeath== 1, "SuddenDeath",mort_adjud$SuddenDeath)
-
-mort_adjud$SuddenCardiac <- ifelse(mort_adjud$SuddenCardiac == 1, "SuddenCardiac",mort_adjud$SuddenCardiac)
-
-mort_adjud$LungCancer <- ifelse(mort_adjud$LungCancer== 1, "LungCancer",mort_adjud$LungCancer)
-
-mort_adjud$OthCancer <- ifelse(mort_adjud$OthCancer == 1, "OthCancer",mort_adjud$OthCancer)
-
-mort_adjud$Renal <- ifelse(mort_adjud$Renal== 1, "Renal",mort_adjud$Renal)
-
-mort_adjud$Diabetes <- ifelse(mort_adjud$Diabetes == 1, "Diabetes",mort_adjud$Diabetes)
-
-mort_adjud$Sepsis <- ifelse(mort_adjud$Sepsis == 1, "Sepsis",mort_adjud$Sepsis)
-
-mort_adjud$Accdnt_suicd <- ifelse(mort_adjud$Accdnt_suicd == 1, "Accdnt_suicd",mort_adjud$Accdnt_suicd)
-
-mort_adjud$OthDis <- ifelse(mort_adjud$OthDis == 1, "OthDis",mort_adjud$OthDis)
-
-mort_adjud$UnknownFactor <- ifelse(mort_adjud$UnknownFactor == 1, "UnknownFactor",mort_adjud$UnknownFactor)
-
-mort_adjud$COPD_resp <- ifelse(mort_adjud$COPD_resp == 1, "COPD_resp",mort_adjud$COPD_resp)
-
-mort_adjud$CVD <- ifelse(mort_adjud$CVD == 1, "CVD",mort_adjud$CVD)
-
-mort_adjud$Cancer <- ifelse(mort_adjud$Cancer== 1, "Cancer",mort_adjud$Cancer)
-
-mort_adjud$Other <- ifelse(mort_adjud$Other == 1, "Other",mort_adjud$Other)
-
-mort_adjud$Accdnt_Details <- as.factor(mort_adjud$Accdnt_Details)
-
-levels(mort_adjud$Accdnt_Details)[levels(mort_adjud$Accdnt_Details)=="1"] <- "accident"
-levels(mort_adjud$Accdnt_Details)[levels(mort_adjud$Accdnt_Details)=="2"] <- "suicide"
-levels(mort_adjud$Accdnt_Details)[levels(mort_adjud$Accdnt_Details)=="3"] <- "drug"
+```
 
 
-mort_adjud2 <- mort_adjud
+```{r}
 
+
+### _____________________________ADD LABELS________________________________________________ ###
+
+mort_adjud2<-mort_adjud
+
+mort_adjud2$vital_status <- ifelse(mort_adjud2$vital_status == 1, "Dead", mort_adjud2$vital_status)
+
+mort_adjud2$ccod_mult <- ifelse(mort_adjud2$ccod_mult == 0, "unspecified", mort_adjud2$ccod_mult)
+
+mort_adjud2$ccod_mult <- ifelse(mort_adjud2$ccod_mult == 1, "single", mort_adjud2$ccod_mult)
+
+
+mort_adjud2$COPD_Exac_w_Pneu <- ifelse(mort_adjud2$COPD_Exac_w_Pneu == 1, "COPD_Exac_w_Pneu",mort_adjud2$COPD_Exac_w_Pneu )
+
+mort_adjud2$COPD_Exac_wo_Pneu <- ifelse(mort_adjud2$COPD_Exac_wo_Pneu == 1, "COPD_Exac_wo_Pneu",mort_adjud2$COPD_Exac_wo_Pneu)
+
+mort_adjud2$COPD_no_exac <- ifelse(mort_adjud2$COPD_no_exac == 1, "COPD_no_exac",mort_adjud2$COPD_no_exac)
+
+mort_adjud2$OthResp <- ifelse(mort_adjud2$OthResp == 1, "OthResp",mort_adjud2$OthResp)
+
+mort_adjud2$MI <- ifelse(mort_adjud2$MI == 1, "MI",mort_adjud2$MI)
+
+mort_adjud2$Stroke <- ifelse(mort_adjud2$Stroke == 1, "Stroke",mort_adjud2$Stroke)
+
+mort_adjud2$DVT <- ifelse(mort_adjud2$DVT == 1, "DVT",mort_adjud2$DVT)
+
+mort_adjud2$OthCardiac <- ifelse(mort_adjud2$OthCardiac == 1, "OthCardiac",mort_adjud2$OthCardiac)
+
+mort_adjud2$SuddenDeath <- ifelse(mort_adjud2$SuddenDeath== 1, "SuddenDeath",mort_adjud2$SuddenDeath)
+
+mort_adjud2$SuddenCardiac <- ifelse(mort_adjud2$SuddenCardiac == 1, "SuddenCardiac",mort_adjud2$SuddenCardiac)
+
+mort_adjud2$LungCancer <- ifelse(mort_adjud2$LungCancer== 1, "LungCancer",mort_adjud2$LungCancer)
+
+mort_adjud2$OthCancer <- ifelse(mort_adjud2$OthCancer == 1, "OthCancer",mort_adjud2$OthCancer)
+
+mort_adjud2$Renal <- ifelse(mort_adjud2$Renal== 1, "Renal",mort_adjud2$Renal)
+
+mort_adjud2$Diabetes <- ifelse(mort_adjud2$Diabetes == 1, "Diabetes",mort_adjud2$Diabetes)
+
+mort_adjud2$Sepsis <- ifelse(mort_adjud2$Sepsis == 1, "Sepsis",mort_adjud2$Sepsis)
+
+mort_adjud2$Accdnt_suicd <- ifelse(mort_adjud2$Accdnt_suicd == 1, "Accdnt_suicd",mort_adjud2$Accdnt_suicd)
+
+mort_adjud2$OthDis <- ifelse(mort_adjud2$OthDis == 1, "OthDis",mort_adjud2$OthDis)
+
+mort_adjud2$UnknownFactor <- ifelse(mort_adjud2$UnknownFactor == 1, "UnknownFactor",mort_adjud2$UnknownFactor)
+
+mort_adjud2$COPD_resp <- ifelse(mort_adjud2$COPD_resp == 1, "COPD_resp",mort_adjud2$COPD_resp)
+
+mort_adjud2$CVD <- ifelse(mort_adjud2$CVD == 1, "CVD",mort_adjud2$CVD)
+
+mort_adjud2$Cancer <- ifelse(mort_adjud2$Cancer== 1, "Cancer",mort_adjud2$Cancer)
+
+mort_adjud2$Other <- ifelse(mort_adjud2$Other == 1, "Other",mort_adjud2$Other)
+
+mort_adjud2$Accdnt_Details <- as.factor(mort_adjud2$Accdnt_Details)
+
+levels(mort_adjud2$Accdnt_Details)[levels(mort_adjud2$Accdnt_Details)=="1"] <- "accident"
+levels(mort_adjud2$Accdnt_Details)[levels(mort_adjud2$Accdnt_Details)=="2"] <- "suicide"
+levels(mort_adjud2$Accdnt_Details)[levels(mort_adjud2$Accdnt_Details)=="3"] <- "drug"
+
+mort_adjud2$ccod_lung <- ifelse(mort_adjud2$ccod_lung == 1, "LUNG-RELATED", mort_adjud2$ccod_lung)
+
+table(mort_adjud2$ccod_lung)
+
+table(mort_adjud2$ccod_mult,mort_adjud2$ccod_lung)
+```
+
+
+```{r}
 two <- mort_adjud2[c(19:41)]
 names(two)
 library(dplyr)
 unite_(mort_adjud2, "CCOD", c("COPD_Exac_w_Pneu","COPD_Exac_wo_Pneu","COPD_no_exac","OthResp","MI","Stroke","DVT","OthCardiac","SuddenDeath","SuddenCardiac","LungCancer","OthCancer","Renal", "Diabetes","Sepsis","Accdnt_suicd","OthDis","UnknownFactor", "Accdnt_Details","COPD_resp","CVD","Cancer", "Other"))
+
 
 be <- lapply(two, function(x) {
  a<- as.data.frame(table(x))
@@ -639,6 +597,109 @@ longp1p2<- reshape(wideflat_1,idvar='sid', direction='long',
 ```
 
 
+
+
+
+
+
+```{r}
+library(ggplot2)
+
+ggplot(LFUsurv,aes(x=ER_times,group=SurveyYear,fill=SurveyYear))+
+  geom_histogram(position="dodge",alpha=0.8,binwidth=1) +
+  xlab("ER_Times")+
+  ylab("Count")+
+  scale_y_log10()+
+  labs(title = "ER Visits by Survey Type Administered")+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  theme(plot.title=element_text(family="Times", face="bold", size=10)) 
+
+
+ggplot(LFUsurv,aes(x=Antibiotic_times,group=SurveyYear,fill=SurveyYear))+
+  geom_histogram(position="dodge",alpha=0.8,binwidth=1) +
+  xlab("Antibiotic Presc. Count")+
+  ylab("Count")+
+  scale_y_log10()+
+  labs(title = "Antibiotic Prescr. by Survey Type Administered")+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  theme(plot.title=element_text(family="Times", face="bold", size=10)) 
+
+
+ggplot(LFUsurv,aes(x=Steroid_times,group=SurveyYear,fill=SurveyYear))+
+  geom_histogram(position="dodge",alpha=0.8,binwidth=1) +
+  xlab("Steroid Presc. Count")+
+  ylab("Count")+
+  scale_y_log10()+
+  labs(title = "Steroid Prescr. by Survey Type Administered")+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  theme(plot.title=element_text(family="Times", face="bold", size=10)) 
+
+ggplot(LFUsurv,aes(x=UrgentDr_times,group=SurveyYear,fill=SurveyYear))+
+  geom_histogram(position="dodge",alpha=0.8,binwidth=1) +
+  xlab("Urgent Dr. Visit Count")+
+  ylab("Count")+
+  scale_y_log10()+
+  labs(title = "Urgent Dr. Visit by Survey Type Administered")+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  theme(plot.title=element_text(family="Times", face="bold", size=10)) 
+
+
+ggplot(LFUsurv,aes(x=Antib_steroid_times,group=SurveyYear,fill=SurveyYear))+
+  geom_histogram(position="dodge",alpha=0.8,binwidth=1) +
+  xlab("Antibiotic or Steroid Presc. Count")+
+  ylab("Count")+
+  scale_y_log10()+
+  labs(title = "Antibiotic or Steroid Presc. by Survey Type Administered")+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+  theme(plot.title=element_text(family="Times", face="bold", size=10)) 
+
+```
+LFU DATA EVALUATION:
+
+```{r}
+hist(LFUsurv$surveyNum)
+
+
+
+ggplot(LFUsurv, aes(surveyNum)) +
+  geom_histogram(bins = 50, fill="blue")+
+  scale_x_continuous("Number of Surveys", breaks=c(0:20)) +ylab("Count") + ggtitle("# of surveys completed per patient \n during study") + theme(
+plot.title = element_text(color="black", size=14, face="bold")
+)
+
+
+ggplot(LFUsurv, aes(MonthsSinceInitialVisit)) +
+  geom_histogram(bins = 131, fill="gray20", color="black")+
+  scale_x_continuous("Months of Follow-Up Since First Visit", breaks=c(1, 50, 100, 130)) +ylab("Count") + ggtitle("# of months since initial visit") + theme(
+plot.title = element_text(color="black", size=14, face="bold")
+)
+
+ggplot(LFUsurv, aes(ER_times)) +  geom_histogram(bins = 131, fill="gray20", color="black")+
+  scale_x_continuous("#ER", breaks=c(1, 50, 100, 130)) +ylab("Count") + ggtitle("# of ER Since Last Visit") + theme(
+plot.title = element_text(color="black", size=14, face="bold")
+)
+
+ggplot(LFUsurv, aes(Antib_steroid_times)) +  geom_histogram(bins = 131, fill="gray20", color="black")+
+  scale_x_continuous("#Episodes", breaks=c(1, 50, 100, 130)) +ylab("Count") + ggtitle("# of Episodes Since Last Visit") + theme(
+plot.title = element_text(color="black", size=14, face="bold")
+)
+ggplot(LFUsurv, aes(Hosp_times)) +  geom_histogram(bins = 131, fill="gray20", color="black")+
+  scale_x_continuous("#Hospitalizations", breaks=c(1, 50, 100, 130)) +ylab("Count") + ggtitle("# of Hospitalizations Since Last Visit") + theme(
+plot.title = element_text(color="black", size=14, face="bold")
+)
+
+ggplot(LFUsurv, aes(Net_Exacerbations)) +  geom_histogram(bins = 131, fill="gray20", color="black")+
+  scale_x_continuous("# Total Exacerbations", breaks=c(1, 50, 100, 130)) +ylab("Count") + ggtitle("# Exacerbations") + theme(
+plot.title = element_text(color="black", size=14, face="bold")
+)
+
+ggplot(LFUsurv, aes(Net_Severe_Exac)) +  geom_histogram(bins = 131, fill="gray20", color="black")+
+  scale_x_continuous("# Severe Exacerbations", breaks=c(1, 50, 100, 130)) +ylab("Count") + ggtitle("# Severe Exacerbations") + theme(
+plot.title = element_text(color="black", size=14, face="bold")
+)
+
+
+```
 
 Summary of Visits:
 
