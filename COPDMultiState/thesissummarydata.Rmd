@@ -105,7 +105,6 @@ mort_adjud$sid <- as.character(mort_adjud$sid)
 
 #sapply(copd_p1p2, class)  #used to check for any remaining problematic spots for merging
 
-
 ```
 
 Let's try to merge the LFU dataset with the copd_p1p2 dataset
@@ -165,9 +164,19 @@ names(copd2)
 copd3 <- subset(copd2, visitnum==1)[,c(1,3,29)] #10371 are visit 1
 copd4 <- subset(copd2, visitnum == 2)[,c(1,3,29)]#6758 are visit 2 (5717 completed p1p2 and spirometry)
 
+# We have these broken into 1 and 2. How about we had a suffix to v1 and v2 values and then merge them into a single dataset using column bind.
 
+#What are the values that are shared between the two visits and don't need a suffix? Remove those from the dataframe
+copd3a <- subset(copd2, visitnum==1)[,-c(2,6,7,8,9,10,11,12,13, 45,48:58)]
+copd3b <- subset(copd2, visitnum==2)[,-c(2,6,7,8,9,10,11,12,13,45, 48:58)]
+copd3c <- subset(copd2)[,c(1,2,6,7,8,9,10,11,12,13,45, 48:58)]
 
+colnames(copd3a) <- paste(colnames(copd3a), "_v1", sep = "")
 
+colnames(copd3a) <-c("sid", "visitnum_v1","Visit_Year_v1","Visit_Date_v1","age_visit_v1","Height_CM_v1","Weight_KG_v1","Waist_CM_v1","Arm_Span_CM_v1","BMI_v1","BODE_v1","ATS_PackYears_v1","YearsSinceQuit_v1","Duration_Smoking_v1","Severe_Exacerbations_v1","Exacerbation_Frequency_v1","Chronic_Bronchitis_v1","SafetyIssues_P2_v1","ConfirmedNoCT_v1","finalGold_v1","finalgold_visit_v1","FEV1pp_utah_v1","FVCpp_utah_v1","FEV1_FVC_utah_v1","FEV1_utah_v1","FEV6_utah_v1","FVC_utah_v1","PEF_utah_v1","FEF2575_utah_v1","pre_FEV1_v1","pre_FEV6_v1","pre_FVC_v1","pre_FEV1_FVC_v1","pre_PEF_v1","pre_FEF2575_v1","NewGOLD_SGRQ_v1","Chronic_Bronchitis_P1_v1","New_Chronic_Bronchitis_v1","signif_lungchange_suppress_v1","smoking_status_change_v1","pctEmph_Thirona_v1", "pctGasTrap_Thirona_v1" , "Pi10_Thirona_v1","AWT_seg_Thirona_v1")
+
+colnames(copd3b) <- paste(colnames(copd3b), "_v2", sep = "")
+colnames(copd3b) <-c("sid", "visitnum_v2","Visit_Year_v2","Visit_Date_v2","age_visit_v2","Height_CM_v2","Weight_KG_v2","Waist_CM_v2","Arm_Span_CM_v2","BMI_v2","BODE_v2","ATS_PackYears_v2","YearsSinceQuit_v2","Duration_Smoking_v2","Severe_Exacerbations_v2","Exacerbation_Frequency_v2","Chronic_Bronchitis_v2","SafetyIssues_P2_v2","ConfirmedNoCT_v2","finalGold_v2","finalgold_visit_v2","FEV1pp_utah_v2","FVCpp_utah_v2","FEV1_FVC_utah_v2","FEV1_utah_v2","FEV6_utah_v2","FVC_utah_v2","PEF_utah_v2","FEF2575_utah_v2","pre_FEV1_v2","pre_FEV6_v2","pre_FVC_v2","pre_FEV1_FVC_v2","pre_PEF_v2","pre_FEF2575_v2","NewGOLD_SGRQ_v2","Chronic_Bronchitis_P1_v2","New_Chronic_Bronchitis_v2","signif_lungchange_suppress_v2","smoking_status_change_v2","pctEmph_Thirona_v2", "pctGasTrap_Thirona_v2" , "Pi10_Thirona_v2","AWT_seg_Thirona_v2")
 
 names(copd3) <- c("sid", "visitnum", "finalgold1")
 names(copd4) <- c("sid", "visitnum", "finalgold2")
@@ -180,7 +189,9 @@ copd5 <- merge(copd2,copd3,by=c("sid"), all.x=TRUE)
 copd6 <- merge(copd5,copd4, by=c("sid"), all.x=TRUE)
 
 
+```
 
+```{r}
 
 #I think i need to merge copd4 and copd3 in with the main copd2 dataset. This will require a merge, not a column bind because there are differing numbers of rows - we'll match based on subject id. 
 
