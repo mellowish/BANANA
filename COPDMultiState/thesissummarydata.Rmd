@@ -156,64 +156,57 @@ library(dplyr)
 library(tidyr)
 #ptinfo <- copd_p1p2[c(1,2,8:11,13,14,445,446)] 
 
-copd2 <- copd_p1p2[c( 1,2,3,5,6,8:11,13,14,445,446,15, 22,23,30, 31, 37, 579:585, 587,588, 628, 629,631:644, 652:668, 678,682, 757, 758)] #dataset of repeated variables of interest
+copd2 <- copd_p1p2[c( 1,2,3,5,6,8:11,13,14,445,446,15, 22,23,30, 31, 37, 579:585, 587,588, 628, 629,631:644,651:668, 678,682, 757, 758)] #dataset of repeated variables of interest
 names(copd2)
 #there are `17129 observations in this dataset
 
 #29 is the gold stage values which we care about for summary statistics. 
-copd3 <- subset(copd2, visitnum==1)[,c(1,3,29)] #10371 are visit 1
-copd4 <- subset(copd2, visitnum == 2)[,c(1,3,29)]#6758 are visit 2 (5717 completed p1p2 and spirometry)
+#copd3 <- subset(copd2, visitnum==1)[,c(1,3,29)] #10371 are visit 1
+#copd4 <- subset(copd2, visitnum == 2)[,c(1,3,29)]#6758 are visit 2 (5717 completed p1p2 and spirometry)
 
 # We have these broken into 1 and 2. How about we had a suffix to v1 and v2 values and then merge them into a single dataset using column bind.
 
 #What are the values that are shared between the two visits and don't need a suffix? Remove those from the dataframe
-copd3a <- subset(copd2, visitnum==1)[,-c(2,6,7,8,9,10,11,12,13, 45,48:58)]
-copd3b <- subset(copd2, visitnum==2)[,-c(2,6,7,8,9,10,11,12,13,45, 48:58)]
-copd3c <- subset(copd2)[,c(1,2,6,7,8,9,10,11,12,13,45, 48:58)]
+
+
+copd3a <- subset(copd2, visitnum==1)[,-c(2,6:13,45,46,49:59)]
+copd3b <- subset(copd2, visitnum==2)[,-c(2,6:13,45,46,49:59)]
+copd_constant <- subset(copd2)[,c(1,2,3,6:13,45,46,49:59)]
 
 colnames(copd3a) <- paste(colnames(copd3a), "_v1", sep = "")
 
-colnames(copd3a) <-c("sid", "visitnum_v1","Visit_Year_v1","Visit_Date_v1","age_visit_v1","Height_CM_v1","Weight_KG_v1","Waist_CM_v1","Arm_Span_CM_v1","BMI_v1","BODE_v1","ATS_PackYears_v1","YearsSinceQuit_v1","Duration_Smoking_v1","Severe_Exacerbations_v1","Exacerbation_Frequency_v1","Chronic_Bronchitis_v1","SafetyIssues_P2_v1","ConfirmedNoCT_v1","finalGold_v1","finalgold_visit_v1","FEV1pp_utah_v1","FVCpp_utah_v1","FEV1_FVC_utah_v1","FEV1_utah_v1","FEV6_utah_v1","FVC_utah_v1","PEF_utah_v1","FEF2575_utah_v1","pre_FEV1_v1","pre_FEV6_v1","pre_FVC_v1","pre_FEV1_FVC_v1","pre_PEF_v1","pre_FEF2575_v1","NewGOLD_SGRQ_v1","Chronic_Bronchitis_P1_v1","New_Chronic_Bronchitis_v1","signif_lungchange_suppress_v1","smoking_status_change_v1","pctEmph_Thirona_v1", "pctGasTrap_Thirona_v1" , "Pi10_Thirona_v1","AWT_seg_Thirona_v1")
+colnames(copd3a) <-c("sid", "visitnum_v1","Visit_Year_v1","Visit_Date_v1","age_visit_v1","Height_CM_v1","Weight_KG_v1","Waist_CM_v1","Arm_Span_CM_v1","BMI_v1","BODE_v1","ATS_PackYears_v1","YearsSinceQuit_v1","Duration_Smoking_v1","Severe_Exacerbations_v1","Exacerbation_Frequency_v1","Chronic_Bronchitis_v1","SafetyIssues_P2_v1","ConfirmedNoCT_v1","finalGold_v1","finalgold_visit_v1","FEV1pp_utah_v1","FVCpp_utah_v1","FEV1_FVC_utah_v1","FEV1_utah_v1","FEV6_utah_v1","FVC_utah_v1","PEF_utah_v1","FEF2575_utah_v1","pre_FEV1_v1","pre_FEV6_v1","pre_FVC_v1","pre_FEV1_FVC_v1","pre_PEF_v1","pre_FEF2575_v1", "NewGOLD_SGRQ_v1","Chronic_Bronchitis_P1_v1","New_Chronic_Bronchitis_v1","signif_lungchange_suppress_v1","smoking_status_change_v1","pctEmph_Thirona_v1", "pctGasTrap_Thirona_v1" , "Pi10_Thirona_v1","AWT_seg_Thirona_v1")
 
 colnames(copd3b) <- paste(colnames(copd3b), "_v2", sep = "")
 colnames(copd3b) <-c("sid", "visitnum_v2","Visit_Year_v2","Visit_Date_v2","age_visit_v2","Height_CM_v2","Weight_KG_v2","Waist_CM_v2","Arm_Span_CM_v2","BMI_v2","BODE_v2","ATS_PackYears_v2","YearsSinceQuit_v2","Duration_Smoking_v2","Severe_Exacerbations_v2","Exacerbation_Frequency_v2","Chronic_Bronchitis_v2","SafetyIssues_P2_v2","ConfirmedNoCT_v2","finalGold_v2","finalgold_visit_v2","FEV1pp_utah_v2","FVCpp_utah_v2","FEV1_FVC_utah_v2","FEV1_utah_v2","FEV6_utah_v2","FVC_utah_v2","PEF_utah_v2","FEF2575_utah_v2","pre_FEV1_v2","pre_FEV6_v2","pre_FVC_v2","pre_FEV1_FVC_v2","pre_PEF_v2","pre_FEF2575_v2","NewGOLD_SGRQ_v2","Chronic_Bronchitis_P1_v2","New_Chronic_Bronchitis_v2","signif_lungchange_suppress_v2","smoking_status_change_v2","pctEmph_Thirona_v2", "pctGasTrap_Thirona_v2" , "Pi10_Thirona_v2","AWT_seg_Thirona_v2")
 
-names(copd3) <- c("sid", "visitnum", "finalgold1")
-names(copd4) <- c("sid", "visitnum", "finalgold2")
 #every subject id and every row needs to have finalgold1 and finalgold2 even if they are empty. 
-copd3 <- copd3[,c(1,3)]
-copd4 <- copd4[,c(1,3)] #drop the visit value
 
-
-copd5 <- merge(copd2,copd3,by=c("sid"), all.x=TRUE)
-copd6 <- merge(copd5,copd4, by=c("sid"), all.x=TRUE)
+copd4 <- merge(copd3a, copd3b, by.x="sid", by.y="sid", all.x=T)
 
 
 ```
 
+Slight problem, the copd_constant dataset has 17129 rows and it needs to have 10371 - we need to combine the rows by dataset.
+
+The 10720  sid of the constant dataset include the never smokers who we don't want in our dataset anyway.
+
 ```{r}
 
-#I think i need to merge copd4 and copd3 in with the main copd2 dataset. This will require a merge, not a column bind because there are differing numbers of rows - we'll match based on subject id. 
-
-#I want every row to have finalgold1 and finalgold2 so that I can use these for summary statistics. Conveniently, we'll also keep finalgold as a general variable that we can use for time-varying covariates if we want to.
-
-
-# AS OF MAY 2019, WE DECIDED THAT WE WANT EACH ROW TO HAVE ALL PHENOTYPIC CHARACTERISTICS WHICH BRINGS UP THE QUESTION OF WHETHER WE EVEN WANT TO USE THE LONG DATASET. I'm going to make a new dataset to do this now. 
 
 library(dplyr)
-
+names(copd_constant)
 #pull a group of items from each subject that don't change to be added to the LFU dataset
 
-unchanging <- select(copd6,c("sid", "ccenter", "gender", "race", "ethnic", "EverSmokedCig", "ExclusionaryDisease", "age_baseline", "Income", "Insurance", "finalgold1", "finalgold2", "visitnum")) 
 
 #we have a fill-in problem with Income and Insurance 
 
 #we want to selectively keep rows that have income and insurance and drop those that don't without dropping subjects with only one visit
 
-items <- unchanging %>% group_by(sid) %>% summarize(visitcount = max(visitnum)) 
+items <- copd_constant %>% group_by(sid) %>% summarize(visitcount = max(visitnum)) 
 
-check <- select(unchanging, c("sid", "visitnum"))
-check2 <- merge(unchanging, items, by = "sid")  
+check <- select(copd_constant, c("sid", "visitnum"))
+check2 <- merge(copd_constant, items, by = "sid")  
 #flags the rows we want to drop
 check2$drop <- ifelse(check2$visitnum == check2$visitcount, 1, 0)
 
@@ -222,14 +215,11 @@ check3 <- subset(check2, check2$drop == 1)
 #length(unique(check3$sid)) #10720
 #length(unique(copd_p1p2$sid)) #10720
 
+#Before I move on from here, I need to bring the phenotypic data back in seeing as we want all of the phenotypic data in each row.
 
-### OK. SOMEWHERE IN HERE, I NEED TO MAKE DECISIONS ABOUT WHAT IS GOING TO MAINTAINED IN EACH ROW SO THAT SUBJECTS AREN'T NECESSARILY USING TIME=VARYING COVARIATES - THIS NEEDS TO HAPPEN BEFORE WE INCLUDE LFUSURV. 
+copd5 <- merge(copd4, check3, by.x="sid", by.y="sid", all.x=T)
 
-
-
-
-
-
+#good. we have 10371 subjects in this dataset
 
 
 
@@ -238,90 +228,226 @@ check3 <- subset(check2, check2$drop == 1)
 surveyrep <- LFUsurv %>%
   group_by(sid) %>% 
      summarize(counting = max(surveyNum)) 
-#merge that with check3
-total <- merge(check3,surveyrep,by=c("sid"))
 
+
+#merge that with check3
+total <- merge(copd5,surveyrep,by.x = "sid", by.y = "sid", all.y =T)
+summary(LFUsurv$surveyNum)
 #now i need to repeat each row dependent on the number of times the surveys were repeated.
 
 newDat <- total[rep(rownames(total), total$counting), ] # OH MY FREAKING GOD IT WORKED
 
+
+check4 <- unique(copd5$sid) #10371
+check5 <- unique(LFUsurv$sid) #9315 - not everyone participated in the LFU
+check6 <- unique(newDat$sid) #9315
+
+
 #Combine LFU dataset with this one filled with characteristics and then pause there so that we can work on the mortality dataset.
-LFUsurv <- LFUsurv[,-8] #drop ccenter because I think that complicates things.
+LFUsurv2 <- LFUsurv[,-8] #drop ccenter because I think that complicates things - we don't want to deal with the changing centers
 
-rename(newDat, sid2 = sid)
-names(newDat) #there are 14 columns here
+#names(newDat) #there are 113 columns here
+newDat$sid2 <- newDat$sid
+
+
+LFUdescript2_5 <- cbind(newDat, LFUsurv2)  ####        THIS IS THE SEMI-FINAL DATASET         ####
 
 
 
-LFUdescript <- cbind(LFUsurv, newDat)  ####        THIS IS THE SEMI-FINAL DATASET         ####
 
 #check column heads on LFUdescript
-intersect(names(LFUdescript), names(LFUsurv))
-unique(names(LFUdescript), names(LFUsurv))
+#intersect(names(LFUdescript), names(LFUsurv2))
+#unique(names(LFUdescript), names(LFUsurv2))
 
-#sid is repeated on LFUdescript, also have visitnum, visitcount, drop, and counting . We can drop these before proceeding.
-names(LFUdescript) 
-#drop 32, 42, 42, 44, 45
+#sid is repeated on LFUdescript, also have  drop, and counting . We can drop these before proceeding.
 
-LFUdescript <- LFUdescript[-c(32,44:47)]
-names(LFUdescript) #now we're back down to 42 variables which is good
+LFUdescript <- LFUdescript2_5[-c(89, 112:115)]
+#names(LFUdescript) #now we're back down to 136 variables which is good
 
+```
 
+How will the mortality dataset fit in? It also needs the phenotypic data so we'll add that in.
+
+Then, we'll do a rowbind which means that all of the datasets have to have the same variable names. We'll be adding extra columns then.
+
+```{r}
 
 
 #Mortality dataset
 names(mort_adjud) #57 variables
-names(LFUdescript) #42 variables
-names(copd6) #67 variables
+names(LFUdescript) #140 variables - drop visitcount
 
-fulldata2 <- merge(copd6,mort_adjud, by="sid")
-
-
- #fulldata has 123 variables, LFUdescript has 42 variables
-
-#what's the number of shared variables between them?
-
-intersect(names(LFUdescript), names(fulldata2)) #12 shared variables between fulldata and LFU description
-setdiff(names(LFUdescript),names(fulldata2))
-setdiff(names(fulldata2),names(LFUdescript))
-
-empty <- data.frame(matrix(NA, nrow=17129, ncol=30)) #add to copd/mort
-empty2 <- data.frame(matrix(NA, nrow=81912, ncol=111)) #add to LFUsurv
-
-fulldata3 <- cbind(fulldata2, empty)
-
-LFUdescript2 <- cbind(LFUdescript, empty2)
-
-name1 <- names(LFUdescript2)#153
-
-
-name2 <-names(fulldata3) #153
+LFUdescript <-subset(LFUdescript, select=- visitcount)
+names(copd5) #112 variables - but we'll drop "drop" and visitcount
+copd6 <- subset(copd5, select=-c(visitnum, drop, visitcount))
+names(copd6) #109
 
 
 
-a <-c("sid", "surveyNum","SurveyYear","MonthsSinceInitialVisit","monthsSincePrevSurvey","Exclude_ILD_Bronchiectasis", "Exclude_LungTrans_LVRS" ,"SurveyVersion" ,"MethodTaken","Episode_sinceLast", "Antibiotics_SinceLast","Antibiotic_times","Steroids_sinceLast","Steroid_times" ,"Antib_steroid_sinceLast", "Antib_steroid_times","UrgentDr_SinceLast" ,"UrgentDr_times","ER_sinceLast", "ER_times"  , "Hosp_sinceLast",  "Hosp_times" ,"ICU_sinceLast","BreathingTube_sinceLast" , "NewMeds_sinceLast","O2_sinceLast" ,    "CurrentlySmoking_LFU" , "exacerb_Ster_Antib" , "episode_untreated"  ,"Net_Exacerbations",  "Net_Severe_Exac", "ccenter", "gender", "race", "ethnic","EverSmokedCig",       "ExclusionaryDisease", "age_baseline", "Income", "Insurance" , "finalgold1", "finalgold2", "visitnum", "age_visit","Height_CM" ,"Weight_KG","Waist_CM","Arm_Span_CM" ,"BMI" ,"BODE",  "ATS_PackYears","YearsSinceQuit", "Duration_Smoking","Severe_Exacerbations" ,"Exacerbation_Frequency" ,"Chronic_Bronchitis", "SafetyIssues_P2" ,  "ConfirmedNoCT","finalGold"  ,"finalgold_visit", "FEV1pp_utah","FVCpp_utah","FEV1_FVC_utah"  ,"FEV1_utah" ,"FEV6_utah", "FVC_utah", "PEF_utah","FEF2575_utah","pre_FEV1" ,"pre_FEV6","pre_FVC","pre_FEV1_FVC","pre_PEF" , "pre_FEF2575" , "finalgold_Phase2","NewGOLD_SGRQ","Chronic_Bronchitis_P1", "Days_Phase1_Phase2", "Years_Phase1_Phase2" , "Change_P1_P2_Smoking_Status", "Change_P1_P2_Gold_class", "Change_P1_P2_FEV1_ml","Change_P1_P2_FEV1pp" ,"Change_P1_P2_FEV1_ml_yr" , "Change_P1_P2_MMRC","Change_P1_P2_SGRQ_total", "Change_P1_P2_distwalked", "Change_P1_P2_O2","New_Chronic_Bronchitis","signif_lungchange_suppress", "smoking_status_change", "pctEmph_Thirona", "pctGasTrap_Thirona" ,"Pi10_Thirona" ,"AWT_seg_Thirona","vital_status","mortality_survival_vetted","mortality_survival_vital_status" , "months_followed_net" , "months_followed_visits", "months_followed_LFU", "months_followed_SSDI_search" ,"days_followed", "mortality_cohort" ,"SSDI_searched" ,   "death_cause_adjud","Torch_UCD" , "Torch_UCD_description" ,"Torch_UCD_Other_specify",  "Torch_Group_Basic", "Torch_Group_Basic_descrip", "Torch_UCD_COPD_related" ,"CCOD_COPD_Exac_w_Pneu", "CCOD_COPD_Exac_wo_Pneu",  "CCOD_COPD_no_exac", "CCOD_OthResp","CCOD_MI" , "CCOD_Stroke"  , "CCOD_DVT"  ,  "CCOD_OthCardiac", "CCOD_SuddenDeath",  "CCOD_SuddenCardiac", "CCOD_LungCancer" ,"CCOD_OthCancer","CCOD_Renal", "CCOD_Diabetes","CCOD_Sepsis",  "CCOD_Accdnt_suicd" ,"CCOD_OthDis" ,"CCOD_UnknownFactor","CCOD_Accdnt_Details",  "CCOD_COPD_resp",   "CCOD_CVD" ,"CCOD_Cancer","CCOD_Other" , "AnyCancerDx"   ,"CancerImpact","source_DeathCert" ,"source_InformInterview", "source_MedicalRec" , "source_Other", "source_None", "InfoAssessment","Comorbidity_CoronaryArtery",  "Comorbidity_LungCancer" , "Comorbidity_Osteopors",  "Comorbidity_AnxDepr","Comorbidity_Diabetes","AdjudUCD_MatchDeathCert_12" , "AdjudUCD_MatchDeathCert_any"  ,  "COPD_on_DeathCert" , "Visit_Year", "Visit_Date") #153, these are the names for LFUdescript2
+# The two datasets are therefore, LFUdescript and mort_pheno
+mort_pheno <- merge(copd6,mort_adjud, by="sid")
 
-setdiff(a, name1)
+miss_lfu <- setdiff(names(mort_pheno), names(LFUdescript)) #56
 
-b <- c("sid","ccenter", "visitnum","Visit_Year", "Visit_Date", "gender" , "race","ethnic", "EverSmokedCig" ,"ExclusionaryDisease", "age_baseline","Income" ,"Insurance" , "age_visit",
-"Height_CM" , "Weight_KG", "Waist_CM","Arm_Span_CM" , "BMI" , "BODE" , "ATS_PackYears", "YearsSinceQuit","Duration_Smoking","Severe_Exacerbations" ,"Exacerbation_Frequency"  ,"Chronic_Bronchitis" , "SafetyIssues_P2" ,"ConfirmedNoCT"  , "finalGold","finalgold_visit" , "FEV1pp_utah","FVCpp_utah" ,"FEV1_FVC_utah", "FEV1_utah" ,"FEV6_utah"  ,"FVC_utah" ,   "PEF_utah" ,"FEF2575_utah", "pre_FEV1" ,"pre_FEV6" ,"pre_FVC"  ,"pre_FEV1_FVC", "pre_PEF" ,"pre_FEF2575","finalgold_Phase2" ,"NewGOLD_SGRQ", "Chronic_Bronchitis_P1" , "Days_Phase1_Phase2","Years_Phase1_Phase2" ,"Change_P1_P2_Smoking_Status", "Change_P1_P2_Gold_class", "Change_P1_P2_FEV1_ml","Change_P1_P2_FEV1pp" ,"Change_P1_P2_FEV1_ml_yr" ,"Change_P1_P2_MMRC", "Change_P1_P2_SGRQ_total"  ,"Change_P1_P2_distwalked" ,"Change_P1_P2_O2", "New_Chronic_Bronchitis",  "signif_lungchange_suppress" ,"smoking_status_change" ,"pctEmph_Thirona", "pctGasTrap_Thirona", "Pi10_Thirona","AWT_seg_Thirona", "finalgold1", "finalgold2","vital_status"  ,"mortality_survival_vetted","mortality_survival_vital_status" ,"months_followed_net" , "months_followed_visits","months_followed_LFU", "months_followed_SSDI_search" ,"days_followed", "mortality_cohort" , "SSDI_searched",  "death_cause_adjud" ,  "Torch_UCD",    "Torch_UCD_description"  ,"Torch_UCD_Other_specify", "Torch_Group_Basic", "Torch_Group_Basic_descrip","Torch_UCD_COPD_related" , "CCOD_COPD_Exac_w_Pneu","CCOD_COPD_Exac_wo_Pneu", "CCOD_COPD_no_exac" , "CCOD_OthResp","CCOD_MI", "CCOD_Stroke","CCOD_DVT","CCOD_OthCardiac","CCOD_SuddenDeath", "CCOD_SuddenCardiac","CCOD_LungCancer","CCOD_OthCancer","CCOD_Renal" ,                     "CCOD_Diabetes","CCOD_Sepsis" , "CCOD_Accdnt_suicd","CCOD_OthDis" ,"CCOD_UnknownFactor" ,"CCOD_Accdnt_Details" ,"CCOD_COPD_resp" ,"CCOD_CVD",  "CCOD_Cancer" , "CCOD_Other","AnyCancerDx","CancerImpact" ,  "source_DeathCert"  ,"source_InformInterview"  ,"source_MedicalRec" , "source_Other", "source_None" , "InfoAssessment","Comorbidity_CoronaryArtery", "Comorbidity_LungCancer"  ,"Comorbidity_Osteopors",  "Comorbidity_AnxDepr",  "Comorbidity_Diabetes", "AdjudUCD_MatchDeathCert_12" ,"AdjudUCD_MatchDeathCert_any","COPD_on_DeathCert" , "surveyNum","SurveyYear","MonthsSinceInitialVisit" ,"monthsSincePrevSurvey","Exclude_ILD_Bronchiectasis","Exclude_LungTrans_LVRS" , "SurveyVersion","MethodTaken" ,"Episode_sinceLast","Antibiotics_SinceLast" ,"Antibiotic_times", "Steroids_sinceLast","Steroid_times", "Antib_steroid_sinceLast","Antib_steroid_times" , "UrgentDr_SinceLast", "UrgentDr_times", "ER_sinceLast","ER_times","Hosp_sinceLast" ,"Hosp_times" ,"ICU_sinceLast", "BreathingTube_sinceLast" ,"NewMeds_sinceLast" ,"O2_sinceLast","CurrentlySmoking_LFU" ,"exacerb_Ster_Antib" ,"episode_untreated","Net_Exacerbations","Net_Severe_Exac") #149
+miss_mort <- setdiff(names(LFUdescript), names(mort_pheno)) #30
 
-setdiff(b, name2)
-#setdiff(b,a) #check that they have the same column names
+shared_both <- intersect(names(LFUdescript), names(mort_pheno)) #109
 
-names(LFUdescript2) <- a
+#mortpheno has 165 variables, LFUdescript has 140 variables, they share 109
 
-names(fulldata3) <- b
-
-#merge attempt 1
+#total dataset should have 195 Is that right
 
 
-testing <- rbind(LFUdescript2, fulldata3)
+final_names <- c(shared_both, miss_mort, miss_lfu)  
+
+#we're adding LFU data to the mortality dataset - this adds 30 variables
+
+empty <- data.frame(matrix(NA, nrow=nrow(mort_pheno), ncol=30)) #add to mortpheno
+names(empty) <- miss_mort
+empty2 <- data.frame(matrix(NA, nrow=nrow(LFUdescript), ncol=56)) #add to LFUdescript
+names(empty2) <- miss_lfu
+
+# fulldata2 is phenotypic and then mortality
+mortpheno_final <- cbind(mort_pheno, empty) #195 variables
+
+#lfu descript is phenotypic and then lfu
+LFUdescript_final <- cbind(LFUdescript, empty2) #195 variables
+
+setdiff(names(mortpheno_final), names(LFUdescript_final)) #check that they share the same names
+
+test1_lfu <- LFUdescript_final[c( "sid", "visitnum_v1" , "Visit_Year_v1"                
+, "Visit_Date_v1" ,"age_visit_v1" ,"Height_CM_v1"                 
+, "Weight_KG_v1" ,  "Waist_CM_v1","Arm_Span_CM_v1"               
+, "BMI_v1" ,  "BODE_v1", "ATS_PackYears_v1"             
+, "YearsSinceQuit_v1"  ,"Duration_Smoking_v1"  , "Severe_Exacerbations_v1"      
+, "Exacerbation_Frequency_v1" ,"Chronic_Bronchitis_v1" , "SafetyIssues_P2_v1"           
+, "ConfirmedNoCT_v1"  , "finalGold_v1"    ,   "finalgold_visit_v1"           
+, "FEV1pp_utah_v1"  , "FVCpp_utah_v1"   ,  "FEV1_FVC_utah_v1"             
+, "FEV1_utah_v1"  ,   "FEV6_utah_v1" ,"FVC_utah_v1"                  
+, "PEF_utah_v1"  ,    "FEF2575_utah_v1" ,   "pre_FEV1_v1"                  
+, "pre_FEV6_v1"  , "pre_FVC_v1" , "pre_FEV1_FVC_v1"              
+, "pre_PEF_v1"  ,  "pre_FEF2575_v1" , "NewGOLD_SGRQ_v1"              
+, "Chronic_Bronchitis_P1_v1" , "New_Chronic_Bronchitis_v1","signif_lungchange_suppress_v1"
+, "smoking_status_change_v1" ,  "pctEmph_Thirona_v1" , "pctGasTrap_Thirona_v1"        
+, "Pi10_Thirona_v1" , "AWT_seg_Thirona_v1" , "visitnum_v2"                  
+, "Visit_Year_v2" , "Visit_Date_v2" ,"age_visit_v2"                 
+ , "Height_CM_v2","Weight_KG_v2","Waist_CM_v2"                  
+, "Arm_Span_CM_v2" , "BMI_v2" , "BODE_v2"                      
+ , "ATS_PackYears_v2",  "YearsSinceQuit_v2" ,"Duration_Smoking_v2"          
+, "Severe_Exacerbations_v2" , "Exacerbation_Frequency_v2" , "Chronic_Bronchitis_v2"        
+, "SafetyIssues_P2_v2" , "ConfirmedNoCT_v2" ,"finalGold_v2"                 
+, "finalgold_visit_v2" ,"FEV1pp_utah_v2" ,"FVCpp_utah_v2"                
+ , "FEV1_FVC_utah_v2" , "FEV1_utah_v2" , "FEV6_utah_v2"                 
+, "FVC_utah_v2" , "PEF_utah_v2" , "FEF2575_utah_v2"              
+, "pre_FEV1_v2" , "pre_FEV6_v2"  , "pre_FVC_v2"                   
+, "pre_FEV1_FVC_v2" , "pre_PEF_v2" , "pre_FEF2575_v2"               
+ , "NewGOLD_SGRQ_v2", "Chronic_Bronchitis_P1_v2","New_Chronic_Bronchitis_v2"    
+ , "signif_lungchange_suppress_v2", "smoking_status_change_v2" ,"pctEmph_Thirona_v2"           
+ , "pctGasTrap_Thirona_v2" ,  "Pi10_Thirona_v2" , "AWT_seg_Thirona_v2"           
+ ,"ccenter" ,  "gender"  ,  "race"                         
+, "ethnic" , "EverSmokedCig" , "ExclusionaryDisease"          
+,"age_baseline" ,"Income"   , "Insurance"                    
+,"FinalGold_Phase1", "finalgold_Phase2" , "Days_Phase1_Phase2"           
+, "Years_Phase1_Phase2", "Change_P1_P2_Smoking_Status","Change_P1_P2_Gold_class"      
+, "Change_P1_P2_FEV1_ml", "Change_P1_P2_FEV1pp", "Change_P1_P2_FEV1_ml_yr"      
+, "Change_P1_P2_MMRC" , "Change_P1_P2_SGRQ_total" ,"Change_P1_P2_distwalked"      
+, "Change_P1_P2_O2" ,"surveyNum" ,"SurveyYear"                   
+, "MonthsSinceInitialVisit" , "monthsSincePrevSurvey", "Exclude_ILD_Bronchiectasis"   
+, "Exclude_LungTrans_LVRS","SurveyVersion","MethodTaken"                  
+, "Episode_sinceLast" , "Antibiotics_SinceLast", "Antibiotic_times"             
+, "Steroids_sinceLast", "Steroid_times"  ,   "Antib_steroid_sinceLast"      
+, "Antib_steroid_times",  "UrgentDr_SinceLast","UrgentDr_times"               
+, "ER_sinceLast" , "ER_times" , "Hosp_sinceLast"               
+, "Hosp_times","ICU_sinceLast" ,"BreathingTube_sinceLast"      
+, "NewMeds_sinceLast", "O2_sinceLast","CurrentlySmoking_LFU"         
+, "exacerb_Ster_Antib","episode_untreated", "Net_Exacerbations"            
+, "Net_Severe_Exac","vital_status","mortality_survival_vetted","mortality_survival_vital_status","months_followed_net", "months_followed_visits","months_followed_LFU","months_followed_SSDI_search","days_followed","mortality_cohort","SSDI_searched","death_cause_adjud","Torch_UCD","Torch_UCD_description","Torch_UCD_Other_specify","Torch_Group_Basic","Torch_Group_Basic_descrip","Torch_UCD_COPD_related","CCOD_COPD_Exac_w_Pneu","CCOD_COPD_Exac_wo_Pneu","CCOD_COPD_no_exac","CCOD_OthResp","CCOD_MI","CCOD_Stroke","CCOD_DVT", "CCOD_OthCardiac","CCOD_SuddenDeath","CCOD_SuddenCardiac","CCOD_LungCancer","CCOD_OthCancer","CCOD_Renal","CCOD_Diabetes","CCOD_Sepsis","CCOD_Accdnt_suicd","CCOD_OthDis" ,"CCOD_UnknownFactor","CCOD_Accdnt_Details","CCOD_COPD_resp", "CCOD_CVD" ,"CCOD_Cancer","CCOD_Other","AnyCancerDx","CancerImpact","source_DeathCert" ,"source_InformInterview","source_MedicalRec","source_Other","source_None","InfoAssessment","Comorbidity_CoronaryArtery","Comorbidity_LungCancer", "Comorbidity_Osteopors", "Comorbidity_AnxDepr","Comorbidity_Diabetes","AdjudUCD_MatchDeathCert_12","AdjudUCD_MatchDeathCert_any", "COPD_on_DeathCert" )]
+
+test1_mort <- mortpheno_final[c( "sid", "visitnum_v1" , "Visit_Year_v1"                
+, "Visit_Date_v1" ,"age_visit_v1" ,"Height_CM_v1"                 
+, "Weight_KG_v1" ,  "Waist_CM_v1","Arm_Span_CM_v1"               
+, "BMI_v1" ,  "BODE_v1", "ATS_PackYears_v1"             
+, "YearsSinceQuit_v1"  ,"Duration_Smoking_v1"  , "Severe_Exacerbations_v1"      
+, "Exacerbation_Frequency_v1" ,"Chronic_Bronchitis_v1" , "SafetyIssues_P2_v1"           
+, "ConfirmedNoCT_v1"  , "finalGold_v1"    ,   "finalgold_visit_v1"           
+, "FEV1pp_utah_v1"  , "FVCpp_utah_v1"   ,  "FEV1_FVC_utah_v1"             
+, "FEV1_utah_v1"  ,   "FEV6_utah_v1" ,"FVC_utah_v1"                  
+, "PEF_utah_v1"  ,    "FEF2575_utah_v1" ,   "pre_FEV1_v1"                  
+, "pre_FEV6_v1"  , "pre_FVC_v1" , "pre_FEV1_FVC_v1"              
+, "pre_PEF_v1"  ,  "pre_FEF2575_v1" , "NewGOLD_SGRQ_v1"              
+, "Chronic_Bronchitis_P1_v1" , "New_Chronic_Bronchitis_v1","signif_lungchange_suppress_v1"
+, "smoking_status_change_v1" ,  "pctEmph_Thirona_v1" , "pctGasTrap_Thirona_v1"        
+, "Pi10_Thirona_v1" , "AWT_seg_Thirona_v1" , "visitnum_v2"                  
+, "Visit_Year_v2" , "Visit_Date_v2" ,"age_visit_v2"                 
+ , "Height_CM_v2","Weight_KG_v2","Waist_CM_v2"                  
+, "Arm_Span_CM_v2" , "BMI_v2" , "BODE_v2"                      
+ , "ATS_PackYears_v2",  "YearsSinceQuit_v2" ,"Duration_Smoking_v2"          
+, "Severe_Exacerbations_v2" , "Exacerbation_Frequency_v2" , "Chronic_Bronchitis_v2"        
+, "SafetyIssues_P2_v2" , "ConfirmedNoCT_v2" ,"finalGold_v2"                 
+, "finalgold_visit_v2" ,"FEV1pp_utah_v2" ,"FVCpp_utah_v2"                
+ , "FEV1_FVC_utah_v2" , "FEV1_utah_v2" , "FEV6_utah_v2"                 
+, "FVC_utah_v2" , "PEF_utah_v2" , "FEF2575_utah_v2"              
+, "pre_FEV1_v2" , "pre_FEV6_v2"  , "pre_FVC_v2"                   
+, "pre_FEV1_FVC_v2" , "pre_PEF_v2" , "pre_FEF2575_v2"               
+ , "NewGOLD_SGRQ_v2", "Chronic_Bronchitis_P1_v2","New_Chronic_Bronchitis_v2"    
+ , "signif_lungchange_suppress_v2", "smoking_status_change_v2" ,"pctEmph_Thirona_v2"           
+ , "pctGasTrap_Thirona_v2" ,  "Pi10_Thirona_v2" , "AWT_seg_Thirona_v2"           
+ ,"ccenter" ,  "gender"  ,  "race"                         
+, "ethnic" , "EverSmokedCig" , "ExclusionaryDisease"          
+,"age_baseline" ,"Income"   , "Insurance"                    
+,"FinalGold_Phase1", "finalgold_Phase2" , "Days_Phase1_Phase2"           
+, "Years_Phase1_Phase2", "Change_P1_P2_Smoking_Status","Change_P1_P2_Gold_class"      
+, "Change_P1_P2_FEV1_ml", "Change_P1_P2_FEV1pp", "Change_P1_P2_FEV1_ml_yr"      
+, "Change_P1_P2_MMRC" , "Change_P1_P2_SGRQ_total" ,"Change_P1_P2_distwalked"      
+, "Change_P1_P2_O2" ,"surveyNum" ,"SurveyYear"                   
+, "MonthsSinceInitialVisit" , "monthsSincePrevSurvey", "Exclude_ILD_Bronchiectasis"   
+, "Exclude_LungTrans_LVRS","SurveyVersion","MethodTaken"                  
+, "Episode_sinceLast" , "Antibiotics_SinceLast", "Antibiotic_times"             
+, "Steroids_sinceLast", "Steroid_times"  ,   "Antib_steroid_sinceLast"      
+, "Antib_steroid_times",  "UrgentDr_SinceLast","UrgentDr_times"               
+, "ER_sinceLast" , "ER_times" , "Hosp_sinceLast"               
+, "Hosp_times","ICU_sinceLast" ,"BreathingTube_sinceLast"      
+, "NewMeds_sinceLast", "O2_sinceLast","CurrentlySmoking_LFU"         
+, "exacerb_Ster_Antib","episode_untreated", "Net_Exacerbations"            
+, "Net_Severe_Exac","vital_status","mortality_survival_vetted","mortality_survival_vital_status","months_followed_net", "months_followed_visits","months_followed_LFU","months_followed_SSDI_search","days_followed","mortality_cohort","SSDI_searched","death_cause_adjud","Torch_UCD","Torch_UCD_description","Torch_UCD_Other_specify","Torch_Group_Basic","Torch_Group_Basic_descrip","Torch_UCD_COPD_related","CCOD_COPD_Exac_w_Pneu","CCOD_COPD_Exac_wo_Pneu","CCOD_COPD_no_exac","CCOD_OthResp","CCOD_MI","CCOD_Stroke","CCOD_DVT", "CCOD_OthCardiac","CCOD_SuddenDeath","CCOD_SuddenCardiac","CCOD_LungCancer","CCOD_OthCancer","CCOD_Renal","CCOD_Diabetes","CCOD_Sepsis","CCOD_Accdnt_suicd","CCOD_OthDis" ,"CCOD_UnknownFactor","CCOD_Accdnt_Details","CCOD_COPD_resp", "CCOD_CVD" ,"CCOD_Cancer","CCOD_Other","AnyCancerDx","CancerImpact","source_DeathCert" ,"source_InformInterview","source_MedicalRec","source_Other","source_None","InfoAssessment","Comorbidity_CoronaryArtery","Comorbidity_LungCancer", "Comorbidity_Osteopors", "Comorbidity_AnxDepr","Comorbidity_Diabetes","AdjudUCD_MatchDeathCert_12","AdjudUCD_MatchDeathCert_any", "COPD_on_DeathCert" )]
+#then let's make sure they're in the same order
+
+
+testing <- rbind(test1_lfu, test1_mort)
 #Fill in the dataset further
 
 names(testing)
 
+#I think this is my final dataset.
+
 ```
+
+```{r}
+
+#names_phenolfu <-  c("sid","visitnum_v1","Visit_Year_v1","Visit_Date_v1","age_visit_v1","Height_CM_v1","Weight_KG_v1","Waist_CM_v1","Arm_Span_CM_v1", "BMI_v1","BODE_v1","ATS_PackYears_v1","YearsSinceQuit_v1","Duration_Smoking_v1","Severe_Exacerbations_v1","Exacerbation_Frequency_v1","Chronic_Bronchitis_v1","SafetyIssues_P2_v1","ConfirmedNoCT_v1","finalGold_v1","finalgold_visit_v1","FEV1pp_utah_v1","FVCpp_utah_v1","FEV1_FVC_utah_v1","FEV1_utah_v1","FEV6_utah_v1","FVC_utah_v1","PEF_utah_v1","FEF2575_utah_v1","pre_FEV1_v1","pre_FEV6_v1","pre_FVC_v1","pre_FEV1_FVC_v1","pre_PEF_v1","pre_FEF2575_v1","NewGOLD_SGRQ_v1","Chronic_Bronchitis_P1_v1","New_Chronic_Bronchitis_v1","signif_lungchange_suppress_v1","smoking_status_change_v1", "pctEmph_Thirona_v1","pctGasTrap_Thirona_v1", "Pi10_Thirona_v1","AWT_seg_Thirona_v1","visitnum_v2","Visit_Year_v2","Visit_Date_v2","age_visit_v2","Height_CM_v2","Weight_KG_v2","Waist_CM_v2","Arm_Span_CM_v2","BMI_v2","BODE_v2", "ATS_PackYears_v2" ,"YearsSinceQuit_v2","Duration_Smoking_v2","Severe_Exacerbations_v2","Exacerbation_Frequency_v2","Chronic_Bronchitis_v2","SafetyIssues_P2_v2","ConfirmedNoCT_v2","finalGold_v2","finalgold_visit_v2","FEV1pp_utah_v2","FVCpp_utah_v2","FEV1_FVC_utah_v2","FEV1_utah_v2","FEV6_utah_v2", "FVC_utah_v2", "PEF_utah_v2","FEF2575_utah_v2","pre_FEV1_v2","pre_FEV6_v2","pre_FVC_v2", "pre_FEV1_FVC_v2","pre_PEF_v2","pre_FEF2575_v2", "NewGOLD_SGRQ_v2","Chronic_Bronchitis_P1_v2","New_Chronic_Bronchitis_v2", "signif_lungchange_suppress_v2","smoking_status_change_v2","pctEmph_Thirona_v2","pctGasTrap_Thirona_v2","Pi10_Thirona_v2","AWT_seg_Thirona_v2", "ccenter","gender","race", "ethnic","EverSmokedCig","ExclusionaryDisease","age_baseline", "Income","Insurance", "FinalGold_Phase1","finalgold_Phase2","Days_Phase1_Phase2","Years_Phase1_Phase2","Change_P1_P2_Smoking_Status","Change_P1_P2_Gold_class","Change_P1_P2_FEV1_ml","Change_P1_P2_FEV1pp","Change_P1_P2_FEV1_ml_yr","Change_P1_P2_MMRC","Change_P1_P2_SGRQ_total","Change_P1_P2_distwalked","Change_P1_P2_O2", "surveyNum", "SurveyYear", "MonthsSinceInitialVisit", "monthsSincePrevSurvey", "Exclude_ILD_Bronchiectasis","Exclude_LungTrans_LVRS","SurveyVersion","MethodTaken","Episode_sinceLast", "Antibiotics_SinceLast","Antibiotic_times","Steroids_sinceLast","Steroid_times","Antib_steroid_sinceLast" ,"Antib_steroid_times", "UrgentDr_SinceLast","UrgentDr_times","ER_sinceLast","ER_times","Hosp_sinceLast", "Hosp_times","ICU_sinceLast","BreathingTube_sinceLast","NewMeds_sinceLast","O2_sinceLast","CurrentlySmoking_LFU","exacerb_Ster_Antib","episode_untreated","Net_Exacerbations", "Net_Severe_Exac" )
+
+#names_phenomort <- c( "sid", "visitnum_v1" , "Visit_Year_v1" , "Visit_Date_v1" ,"age_visit_v1","Height_CM_v1", "Weight_KG_v1" ,  "Waist_CM_v1","Arm_Span_CM_v1", "BMI_v1" ,  "BODE_v1", "ATS_PackYears_v1" , "YearsSinceQuit_v1"  ,"Duration_Smoking_v1"  , "Severe_Exacerbations_v1", "Exacerbation_Frequency_v1","Chronic_Bronchitis_v1" , "SafetyIssues_P2_v1", "ConfirmedNoCT_v1","finalGold_v1",   "finalgold_visit_v1"         , "FEV1pp_utah_v1"  , "FVCpp_utah_v1"   ,  "FEV1_FVC_utah_v1"             , "FEV1_utah_v1"  ,   "FEV6_utah_v1" ,"FVC_utah_v1"                  , "PEF_utah_v1"  ,    "FEF2575_utah_v1" ,   "pre_FEV1_v1", "pre_FEV6_v1"  , "pre_FVC_v1" , "pre_FEV1_FVC_v1" , "pre_PEF_v1"  ,  "pre_FEF2575_v1" , "NewGOLD_SGRQ_v1"       , "Chronic_Bronchitis_P1_v1" , "New_Chronic_Bronchitis_v1","signif_lungchange_suppress_v1", "smoking_status_change_v1" ,  "pctEmph_Thirona_v1" , "pctGasTrap_Thirona_v1"      , "Pi10_Thirona_v1" , "AWT_seg_Thirona_v1" , "visitnum_v2", "Visit_Year_v2" , "Visit_Date_v2" ,"age_visit_v2" ,"Height_CM_v2","Weight_KG_v2","Waist_CM_v2", "Arm_Span_CM_v2" , "BMI_v2" , "BODE_v2" ,"ATS_PackYears_v2",  "YearsSinceQuit_v2","Duration_Smoking_v2","Severe_Exacerbations_v2" , "Exacerbation_Frequency_v2" , "Chronic_Bronchitis_v2" , "SafetyIssues_P2_v2" , "ConfirmedNoCT_v2" ,"finalGold_v2", "finalgold_visit_v2","FEV1pp_utah_v2" ,"FVCpp_utah_v2","FEV1_FVC_utah_v2","FEV1_utah_v2" , "FEV6_utah_v2","FVC_utah_v2" , "PEF_utah_v2","FEF2575_utah_v2","pre_FEV1_v2" , "pre_FEV6_v2"  , "pre_FVC_v2", "pre_FEV1_FVC_v2" , "pre_PEF_v2" , "pre_FEF2575_v2","NewGOLD_SGRQ_v2", "Chronic_Bronchitis_P1_v2","New_Chronic_Bronchitis_v2","signif_lungchange_suppress_v2", "smoking_status_change_v2" ,"pctEmph_Thirona_v2", "pctGasTrap_Thirona_v2" ,  "Pi10_Thirona_v2" , "AWT_seg_Thirona_v2","ccenter" ,  "gender"  ,  "race","ethnic" , "EverSmokedCig" , "ExclusionaryDisease","age_baseline" ,"Income"   , "Insurance","FinalGold_Phase1", "finalgold_Phase2" , "Days_Phase1_Phase2","Years_Phase1_Phase2","Change_P1_P2_Smoking_Status","Change_P1_P2_Gold_class","Change_P1_P2_FEV1_ml", "Change_P1_P2_FEV1pp", "Change_P1_P2_FEV1_ml_yr" ,"Change_P1_P2_MMRC" , "Change_P1_P2_SGRQ_total","Change_P1_P2_distwalked","Change_P1_P2_O2","vital_status","mortality_survival_vetted","mortality_survival_vital_status","months_followed_net", "months_followed_visits","months_followed_LFU","months_followed_SSDI_search","days_followed","mortality_cohort","SSDI_searched","death_cause_adjud","Torch_UCD","Torch_UCD_description","Torch_UCD_Other_specify","Torch_Group_Basic","Torch_Group_Basic_descrip","Torch_UCD_COPD_related","CCOD_COPD_Exac_w_Pneu","CCOD_COPD_Exac_wo_Pneu","CCOD_COPD_no_exac","CCOD_OthResp","CCOD_MI","CCOD_Stroke","CCOD_DVT", "CCOD_OthCardiac","CCOD_SuddenDeath","CCOD_SuddenCardiac","CCOD_LungCancer","CCOD_OthCancer","CCOD_Renal","CCOD_Diabetes","CCOD_Sepsis","CCOD_Accdnt_suicd","CCOD_OthDis","CCOD_UnknownFactor","CCOD_Accdnt_Details","CCOD_COPD_resp", "CCOD_CVD" ,"CCOD_Cancer","CCOD_Other","AnyCancerDx","CancerImpact","source_DeathCert","source_InformInterview","source_MedicalRec","source_Other","source_None","InfoAssessment","Comorbidity_CoronaryArtery","Comorbidity_LungCancer", "Comorbidity_Osteopors", "Comorbidity_AnxDepr","Comorbidity_Diabetes","AdjudUCD_MatchDeathCert_12","AdjudUCD_MatchDeathCert_any", "COPD_on_DeathCert" )   
+
+
+#LFU_unique <-c("surveyNum", "SurveyYear", "MonthsSinceInitialVisit", "monthsSincePrevSurvey", "Exclude_ILD_Bronchiectasis","Exclude_LungTrans_LVRS","SurveyVersion","MethodTaken","Episode_sinceLast", "Antibiotics_SinceLast","Antibiotic_times","Steroids_sinceLast","Steroid_times","Antib_steroid_sinceLast" ,"Antib_steroid_times", "UrgentDr_SinceLast","UrgentDr_times","ER_sinceLast","ER_times","Hosp_sinceLast", "Hosp_times","ICU_sinceLast","BreathingTube_sinceLast","NewMeds_sinceLast","O2_sinceLast","CurrentlySmoking_LFU","exacerb_Ster_Antib","episode_untreated","Net_Exacerbations", "Net_Severe_Exac" )#30 items
+
+#pheno_unique <- c("visitnum_v1","Visit_Year_v1","Visit_Date_v1","age_visit_v1","Height_CM_v1","Weight_KG_v1","Waist_CM_v1","Arm_Span_CM_v1", "BMI_v1","BODE_v1","ATS_PackYears_v1","YearsSinceQuit_v1","Duration_Smoking_v1","Severe_Exacerbations_v1","Exacerbation_Frequency_v1","Chronic_Bronchitis_v1","SafetyIssues_P2_v1","ConfirmedNoCT_v1","finalGold_v1","finalgold_visit_v1","FEV1pp_utah_v1","FVCpp_utah_v1","FEV1_FVC_utah_v1","FEV1_utah_v1","FEV6_utah_v1","FVC_utah_v1","PEF_utah_v1","FEF2575_utah_v1","pre_FEV1_v1","pre_FEV6_v1","pre_FVC_v1","pre_FEV1_FVC_v1","pre_PEF_v1","pre_FEF2575_v1","NewGOLD_SGRQ_v1","Chronic_Bronchitis_P1_v1","New_Chronic_Bronchitis_v1","signif_lungchange_suppress_v1","smoking_status_change_v1", "pctEmph_Thirona_v1","pctGasTrap_Thirona_v1", "Pi10_Thirona_v1","AWT_seg_Thirona_v1","visitnum_v2","Visit_Year_v2","Visit_Date_v2","age_visit_v2","Height_CM_v2","Weight_KG_v2","Waist_CM_v2","Arm_Span_CM_v2","BMI_v2","BODE_v2", "ATS_PackYears_v2" ,"YearsSinceQuit_v2","Duration_Smoking_v2","Severe_Exacerbations_v2","Exacerbation_Frequency_v2","Chronic_Bronchitis_v2","SafetyIssues_P2_v2","ConfirmedNoCT_v2","finalGold_v2","finalgold_visit_v2","FEV1pp_utah_v2","FVCpp_utah_v2","FEV1_FVC_utah_v2","FEV1_utah_v2","FEV6_utah_v2", "FVC_utah_v2", "PEF_utah_v2","FEF2575_utah_v2","pre_FEV1_v2","pre_FEV6_v2","pre_FVC_v2", "pre_FEV1_FVC_v2","pre_PEF_v2","pre_FEF2575_v2", "NewGOLD_SGRQ_v2","Chronic_Bronchitis_P1_v2","New_Chronic_Bronchitis_v2", "signif_lungchange_suppress_v2","smoking_status_change_v2","pctEmph_Thirona_v2","pctGasTrap_Thirona_v2","Pi10_Thirona_v2","AWT_seg_Thirona_v2", "ccenter","gender","race", "ethnic","EverSmokedCig","ExclusionaryDisease","age_baseline", "Income","Insurance", "FinalGold_Phase1","finalgold_Phase2","Days_Phase1_Phase2","Years_Phase1_Phase2","Change_P1_P2_Smoking_Status","Change_P1_P2_Gold_class","Change_P1_P2_FEV1_ml","Change_P1_P2_FEV1pp","Change_P1_P2_FEV1_ml_yr","Change_P1_P2_MMRC","Change_P1_P2_SGRQ_total","Change_P1_P2_distwalked","Change_P1_P2_O2","visitcount")
+
+#mort_unique <-c("vital_status","mortality_survival_vetted","mortality_survival_vital_status","months_followed_net", "months_followed_visits","months_followed_LFU","months_followed_SSDI_search","days_followed","mortality_cohort","SSDI_searched","death_cause_adjud","Torch_UCD","Torch_UCD_description","Torch_UCD_Other_specify","Torch_Group_Basic","Torch_Group_Basic_descrip","Torch_UCD_COPD_related","CCOD_COPD_Exac_w_Pneu","CCOD_COPD_Exac_wo_Pneu","CCOD_COPD_no_exac","CCOD_OthResp","CCOD_MI","CCOD_Stroke","CCOD_DVT", "CCOD_OthCardiac","CCOD_SuddenDeath","CCOD_SuddenCardiac","CCOD_LungCancer","CCOD_OthCancer","CCOD_Renal","CCOD_Diabetes","CCOD_Sepsis","CCOD_Accdnt_suicd","CCOD_OthDis" ,"CCOD_UnknownFactor","CCOD_Accdnt_Details","CCOD_COPD_resp", "CCOD_CVD" ,"CCOD_Cancer","CCOD_Other","AnyCancerDx","CancerImpact","source_DeathCert" ,"source_InformInterview","source_MedicalRec","source_Other","source_None","InfoAssessment","Comorbidity_CoronaryArtery","Comorbidity_LungCancer", "Comorbidity_Osteopors", "Comorbidity_AnxDepr","Comorbidity_Diabetes","AdjudUCD_MatchDeathCert_12","AdjudUCD_MatchDeathCert_any", "COPD_on_DeathCert" )     
+
+
+```
+
+
+So, we have all of the datasets combined but I'm not sure I know what the structure is...
+
+I'm going to export this as my new dataset and then deal with it separately so i don't have to keep running all this code.
+
+
+```{r}
+write.csv(testing, file = "reformat_COPD.csv",row.names=FALSE)
+```
+
 Let's talk dead people - they'll need another row too.
 
 ```{r}
